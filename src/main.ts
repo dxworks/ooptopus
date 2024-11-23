@@ -2,7 +2,6 @@ import { parseArgs } from "@std/cli/parse-args";
 import { blue, bgWhite, red } from "@std/fmt/colors";
 import {compileJava} from "./commands/steps/compile/compile.ts";
 import {verifyStructure} from "./commands/steps/structure/structure.ts";
-import { ExpectedStructure } from "./commands/steps/structure/structure-types.ts";
 
 // Same as running `deno run example.ts --foo --bar=baz ./quux.txt`
 const args = parseArgs(Deno.args, {
@@ -13,12 +12,19 @@ const args = parseArgs(Deno.args, {
 
 console.log(blue(bgWhite(JSON.stringify(args))));
 
-const expectedStructure: ExpectedStructure = {
+const expectedStructure = {
     classes: [
         {
-            name: 'HelloWorldExample',
-            fields: [],
-            methods: [],
+            name: 'Calculator',
+            fields: [{ name: 'myField', type: 'String', modifiers: ['private', 'static'] },
+                { name: 'myInt', type: 'int', modifiers: ['public'] }],
+            methods: []
+        },
+        {
+            name: 'Test2',
+            fields: [{ name: 'myField2', type: 'String', modifiers: ['private', 'static'] },
+                { name: 'myInt2222', type: 'int', modifiers: ['public'] }],
+            methods: []
         }
     ]
 }

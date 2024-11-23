@@ -1,11 +1,21 @@
 public class Calculator {
-    int result;
+    private static String myField;
+    public int myInt;
 
-    public void add(int a, int b) {
-        result = a + b;
+    public void myMethod() {}
+
+    public int addNumbers(int a, int b) {
+        return a + b;
     }
+}
 
-    public void subtract(int a, int b) {
-        result = a - b;
+class Test2 {
+    private static String myField2;
+    public int myInt2;
+
+    public void myMethod() {}
+
+    public int addNumbers(int a, int b) {
+        return a + b;
     }
 }
