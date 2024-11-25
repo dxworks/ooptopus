@@ -12,20 +12,26 @@ const args = parseArgs(Deno.args, {
 
 console.log(blue(bgWhite(JSON.stringify(args))));
 
+
 const expectedStructure = {
     classes: [
         {
             name: 'Calculator',
             fields: [{ name: 'myField', type: 'String', modifiers: ['private', 'static'] },
                 { name: 'myInt', type: 'int', modifiers: ['public'] }],
-            methods: []
+            methods: [{ name: 'myMethod', returnType: 'void', modifiers: ['public'], parameters: [] },
+                { name: 'addNumbers', returnType: 'int', modifiers: ['public'],
+                    parameters: [{name: 'a', type: 'int'}, {name: 'b', type: 'int'}]
+                }]
         },
         {
             name: 'Test2',
             fields: [{ name: 'myField2', type: 'String', modifiers: ['private', 'static'] },
-                { name: 'myInt2222', type: 'int', modifiers: ['public'] }],
-            methods: []
-        }
+                { name: 'myInt222', type: 'int', modifiers: ['public'] }],
+            methods: [{ name: 'metoda2', returnType: 'void', modifiers: ['private', 'static'],
+                parameters: [{name: 'x', type: 'boolean'}, {name: 'y', type: 'int'}]
+            }]
+        },
     ]
 }
 

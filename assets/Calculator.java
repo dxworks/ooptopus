@@ -1,6 +1,6 @@
 public class Calculator {
-    private static String myField;
-    public int myInt;
+    private String myField;
+    public boolean myInt;
 
     public void myMethod() {}
 
@@ -13,9 +13,9 @@ class Test2 {
     private static String myField2;
     public int myInt2;
 
-    public void myMethod() {}
+    private static void metoda2(boolean x, int y) {}
 
-    public int addNumbers(int a, int b) {
-        return a + b;
-    }
+//    public int addNumbers(int a, int b) {
+//        return a + b;
+//    }
 }
