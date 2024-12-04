@@ -8,14 +8,3 @@ public class Calculator {
         return a + b;
     }
 }
-
-class Test2 {
-    private static String myField2;
-    public int myInt2;
-
-    private static void metoda2(boolean x, int y) {}
-
-//    public int addNumbers(int a, int b) {
-//        return a + b;
-//    }
-}

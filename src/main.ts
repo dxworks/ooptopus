@@ -2,11 +2,12 @@ import { parseArgs } from "@std/cli/parse-args";
 import { blue, bgWhite, red } from "@std/fmt/colors";
 import {compileJava} from "./commands/steps/compile/compile.ts";
 import {verifyStructure} from "./commands/steps/structure/structure.ts";
+import {runJUnitTests} from "./commands/steps/tests/test.ts";
 
 // Same as running `deno run example.ts --foo --bar=baz ./quux.txt`
 const args = parseArgs(Deno.args, {
-    string: ["source"],
-    alias: { source: "s" },
+    string: ["source", "test"],
+    alias: { source: "s", test: "t" },
     stopEarly: true,
 });
 
@@ -42,7 +43,12 @@ if(args._) {
             console.error(red("Source file not provided."));
             Deno.exit(1);
         }
-        await compileJava(args.source, "./out");
+        const compiled = await compileJava(args.source, "./out");
         await verifyStructure(args.source, expectedStructure)
+        if(args.test && compiled) {
+            console.log(blue(`Running tests with ${args.test}...`));
+            // await compileJava(args.test, "./out");
+            await runJUnitTests(args.test, "./out");
+        }
     }
 }
