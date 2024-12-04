@@ -1,8 +1,34 @@
 
 export interface ExpectedStructure {
-    classes: {
-        name: string;
-        fields?: { name: string; type: string; modifiers: string[] }[];
-        methods?: { name: string; returnType: string; modifiers: string[], parameters: { name: string; type: string; }[]; }[];
-    }[];
+    classes: Class[];
+}
+
+interface Class {
+    name: string;
+    fields?: Field[];
+    constructors?: Constructor[];
+    methods?: Method[];
+}
+
+interface Field {
+    name: string;
+    type: string;
+    modifiers: string[];
+}
+
+interface Method {
+    name: string;
+    returnType: string;
+    modifiers: string[];
+    parameters: Parameter[];
+}
+
+interface Constructor {
+    parameters: Parameter[];
+    modifiers: string[];
+}
+
+interface Parameter {
+    name: string;
+    type: string;
 }
