@@ -1,8 +1,7 @@
-import {ExpectedStructure} from "./structure-types.ts";
+import {JavaStructure} from "./structure-types.ts";
 import {parse} from "java-parser"
 import {JavaStructureVisitor} from "./java-structure-visitor.ts";
-import { blue, green, red } from "@std/fmt/colors";
-
+import {blue, green, red} from "@std/fmt/colors";
 
 
 function arraysEqual(arr1: string[], arr2: string[]): boolean {
@@ -15,7 +14,7 @@ function arraysEqual(arr1: string[], arr2: string[]): boolean {
     return sortedArr1.every((value, index) => value === sortedArr2[index]);
 }
 
-export async function verifyStructure(sourcePath: string, expectedStructure: ExpectedStructure): Promise<boolean> {
+export async function verifyStructure(sourcePath: string, expectedStructure: JavaStructure): Promise<boolean> {
 
     const decoder = new TextDecoder("utf-8");
     const code = decoder.decode(Deno.readFileSync(sourcePath));
@@ -33,6 +32,38 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Exp
             console.error(red(`❌ Class "${expectedClass.name}" not found.`));
         } else {
             console.log(green(`✅ Class "${expectedClass.name}" found.`));
+        }
+
+        if (expectedClass.extends) {
+            if (extractedClass?.extends === expectedClass.extends) {
+                console.log(`✅ Class '${expectedClass.name}' correctly extends '${expectedClass.extends}'.`);
+            } else {
+                console.error(`❌ Class '${expectedClass.name}' extends mismatch: expected '${expectedClass.extends}', found '${extractedClass?.extends}'.`);
+            }
+        }
+
+        if (expectedClass.implements) {
+            const implementsMatch = arraysEqual(extractedClass?.implements || [], expectedClass.implements);
+            if (implementsMatch) {
+                console.log(`✅ Class '${expectedClass.name}' correctly implements '${expectedClass.implements.join(", ")}'.`);
+            } else {
+                console.error(`❌ Class '${expectedClass.name}' implements mismatch: expected '${expectedClass.implements.join(", ")}', found '${(extractedClass?.implements || []).join(", ")}'.`);
+            }
+        }
+
+        if (expectedClass.constructors) {
+            for (const expectedConstructor of expectedClass.constructors) {
+                const matchingConstructor = extractedClass?.constructors?.find(constructor =>
+                    constructor.name === expectedConstructor.name &&
+                    JSON.stringify(constructor.parameters) === JSON.stringify(expectedConstructor.parameters)
+                );
+
+                if (!matchingConstructor) {
+                    console.error(`❌ Constructor '${expectedConstructor.name}' with parameters '${JSON.stringify(expectedConstructor.parameters)}' not found in class '${expectedClass.name}'. 🚫`);
+                } else {
+                    console.log(`✅ Constructor '${expectedConstructor.name}' with parameters '${JSON.stringify(expectedConstructor.parameters)}' found in class '${expectedClass.name}'.`);
+                }
+            }
         }
 
         if (expectedClass.fields) {
@@ -77,46 +108,28 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Exp
 
         if (expectedClass.methods) {
             for (const expectedMethod of expectedClass.methods) {
-                const matchingMethod = extractedClass?.methods?.find(method =>
+                const matchingMethods = extractedClass?.methods?.filter(method =>
                     method.name === expectedMethod.name
                 );
 
-                if (!matchingMethod) {
+                if (!matchingMethods || matchingMethods.length === 0) {
                     console.error(`❌ Method '${expectedMethod.name}' not found in class '${expectedClass.name}'. 🚫`);
                     continue;
                 }
 
-                let isCorrect = true;
-                if (matchingMethod.name === expectedMethod.name) {
-                    console.log(`✅ Method name '${matchingMethod.name}' is correct.`);
-                } else {
-                    console.error(`❌ Method name mismatch: expected '${expectedMethod.name}', found '${matchingMethod.name}'.`);
-                    isCorrect = false;
-                }
+                const parameterMatch = matchingMethods.some(method =>
+                    JSON.stringify(method.parameters) === JSON.stringify(expectedMethod.parameters)
+                );
 
-                if (matchingMethod.returnType === expectedMethod.returnType) {
-                    console.log(`✅ Return type for method '${expectedMethod.name}' is correct: '${matchingMethod.returnType}'.`);
+                if (!parameterMatch) {
+                    console.error(`❌ Parameter mismatch for method '${expectedMethod.name}' in class '${expectedClass.name}'. Expected parameters: '${JSON.stringify(expectedMethod.parameters)}'.`);
                 } else {
-                    console.error(`❌ Return type mismatch in method '${expectedMethod.name}': expected '${expectedMethod.returnType}', found '${matchingMethod.returnType}'.`);
-                    isCorrect = false;
-                }
-
-                if (JSON.stringify(matchingMethod.parameters) === JSON.stringify(expectedMethod.parameters)) {
-                    console.log(`✅ Parameters for method '${expectedMethod.name}' are correct: '${JSON.stringify(expectedMethod.parameters)}'.`);
-                } else {
-                    console.error(`❌ Parameter mismatch in method '${expectedMethod.name}': expected '${JSON.stringify(expectedMethod.parameters)}', found '${JSON.stringify(matchingMethod.parameters)}'.`);
-                    isCorrect = false;
-                }
-
-                if (isCorrect) {
-                    console.log(`🎉 All checks passed for method '${expectedMethod.name}' in class '${expectedClass.name}'. 🎉`);
-                } else {
-                    console.error(`🚩 Some checks failed for method '${expectedMethod.name}' in class '${expectedClass.name}'.`);
+                    console.log(`✅ Method '${expectedMethod.name}' with parameters '${JSON.stringify(expectedMethod.parameters)}' found in class '${expectedClass.name}'.`);
                 }
             }
         }
-
     }
+
 
     return true;
 }

@@ -1,78 +1,99 @@
 import {BaseJavaCstVisitorWithDefaults} from "java-parser";
-import {ExpectedStructure} from "./structure-types.ts";
+import {JavaStructure} from "./structure-types.ts";
 
 export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
-    public structure: ExpectedStructure = {classes: []};
-    private currentClass: ExpectedStructure["classes"][0] | null = null;
+    public structure: JavaStructure = {classes: []};
+    private currentClass: JavaStructure["classes"][0] | null = null;
 
-    override typeIdentifier(ctx: any) {
-        if (ctx.Identifier) {
-            ctx.Identifier.forEach((identifier: any) => {
-                const className = identifier.image;
-                if (this.currentClass) {
-                    this.structure.classes.push(this.currentClass);
-                }
-                this.currentClass = {name: className, fields: [], methods: []};
-            });
+    override normalClassDeclaration(ctx: any) {
+        if (ctx.typeIdentifier) {
+            const className = ctx.typeIdentifier[0].children.Identifier[0].image;
+            if (this.currentClass) {
+                this.structure.classes.push(this.currentClass);
+            }
+            this.currentClass = { name: className, fields: [], methods: [], constructors: [] };
+
+            if (ctx.classExtends) {
+                this.currentClass.extends = ctx.classExtends[0].children.classType[0].children.Identifier[0].image;
+            }
+
+            if (ctx.classImplements) {
+                this.currentClass.implements = ctx.classImplements[0].children.interfaceTypeList[0].children.interfaceType.map((interfaceType: any) => {
+                    return interfaceType.children.classType[0].children.Identifier[0].image;
+                });
+            }
         }
-        super.typeIdentifier(ctx);
+        super.normalClassDeclaration(ctx);
     }
 
-    override classMemberDeclaration(ctx: any) {
+    override classBodyDeclaration(ctx: any) {
         if (!this.currentClass) {
             console.error("No active class to add members to.");
             return;
         }
 
-        if (ctx.fieldDeclaration) {
-            ctx.fieldDeclaration.forEach((fieldDeclaration: any) => {
-                const fieldModifiers = fieldDeclaration.children.fieldModifier
-                    ? this.fieldModifier(fieldDeclaration.children.fieldModifier)
-                    : [];
-                const fieldType = fieldDeclaration.children.unannType
-                    ? this.unannType(fieldDeclaration.children.unannType)
-                    : null;
-                const fieldNames = fieldDeclaration.children.variableDeclaratorList
-                    ? this.variableDeclaratorList(fieldDeclaration.children.variableDeclaratorList, true)
-                    : [];
+        if (ctx.constructorDeclaration) {
+            ctx.constructorDeclaration.forEach((constructorDeclaration: any) => {
+                const constructorName = this.currentClass?.name || "UnnamedConstructor";
+                const constructorDeclarator = constructorDeclaration.children.constructorDeclarator?.[0];
+                const constructorParameters = constructorDeclarator ? this.formalParameterList(constructorDeclarator.children.formalParameterList?.[0]) : [];
 
-                fieldNames.forEach((fieldName) => {
-                    if (fieldType) {
-                        this.currentClass?.fields?.push({
-                            name: fieldName,
-                            type: fieldType,
-                            modifiers: fieldModifiers,
-                        });
-                    }
-                });
+                if (constructorName && constructorParameters) {
+                    this.currentClass?.constructors?.push({
+                        name: constructorName,
+                        parameters: constructorParameters,
+                    });
+                }
             });
         }
-        if (ctx.methodDeclaration) {
-            ctx.methodDeclaration.forEach((methodDeclaration: any) => {
-                const methodModifiers = methodDeclaration.children.methodModifier
-                    ? this.fieldModifier(methodDeclaration.children.methodModifier)
-                    : [];
-                const methodReturnType = methodDeclaration.children.methodHeader
-                    ? this.unannType(methodDeclaration.children.methodHeader)
-                    : null;
-                const methodNames = methodDeclaration.children.methodHeader ?
-                    this.variableDeclaratorList(methodDeclaration.children.methodHeader, false)
-                    : [];
-                const methodParameters = methodDeclaration.children.methodHeader ?
-                    this.formalParameterList(methodDeclaration.children.methodHeader)
-                    : [];
-                methodNames.forEach((methodName) => {
-                    if (methodReturnType) {
-                        this.currentClass?.methods?.push({
-                            name: methodName,
-                            returnType: methodReturnType,
-                            modifiers: methodModifiers,
-                            parameters: methodParameters,
-                        });
-                    }
-                });
-            });
 
+        if (ctx.classMemberDeclaration) {
+            ctx.classMemberDeclaration.forEach((classMemberDeclaration: any) => {
+                if (classMemberDeclaration.children.fieldDeclaration) {
+                    classMemberDeclaration.children.fieldDeclaration.forEach((fieldDeclaration: any) => {
+                        const fieldModifiers = fieldDeclaration.children.fieldModifier
+                            ? this.fieldModifier(fieldDeclaration.children.fieldModifier)
+                            : [];
+                        const fieldType = fieldDeclaration.children.unannType
+                            ? this.unannType(fieldDeclaration.children.unannType)
+                            : null;
+                        const fieldNames = fieldDeclaration.children.variableDeclaratorList
+                            ? this.variableDeclaratorList(fieldDeclaration.children.variableDeclaratorList, true)
+                            : [];
+
+                        fieldNames.forEach((fieldName) => {
+                            if (fieldType) {
+                                this.currentClass?.fields?.push({
+                                    name: fieldName,
+                                    type: fieldType,
+                                    modifiers: fieldModifiers,
+                                });
+                            }
+                        });
+                    });
+                }
+
+                if (classMemberDeclaration.children.methodDeclaration) {
+                    classMemberDeclaration.children.methodDeclaration.forEach((methodDeclaration: any) => {
+                        const methodModifiers = methodDeclaration.children.methodModifier
+                            ? this.fieldModifier(methodDeclaration.children.methodModifier)
+                            : [];
+                        const methodHeader = methodDeclaration.children.methodHeader?.[0];
+                        const methodReturnType = methodHeader ? this.unannType(methodHeader.children.result) : null;
+                        const methodName = methodHeader ? this.extractFieldName(methodHeader.children.methodDeclarator?.[0]) : null;
+                        const methodParameters = methodHeader ? this.formalParameterList(methodHeader.children.methodDeclarator?.[0].children.formalParameterList?.[0]) : [];
+
+                        if (methodName && methodReturnType) {
+                            this.currentClass?.methods?.push({
+                                name: methodName,
+                                returnType: methodReturnType,
+                                modifiers: methodModifiers,
+                                parameters: methodParameters,
+                            });
+                        }
+                    });
+                }
+            });
         }
     }
 
@@ -115,9 +136,11 @@ export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
 
     override formalParameterList(ctx: any): { type: string, name: string }[] {
         const parameters: { name: string, type: string }[] = [];
-        ctx.forEach((methodDeclarator: any) => {
-            methodDeclarator.children?.methodDeclarator?.[0]?.children?.formalParameterList?.[0].children?.formalParameter
-                .forEach((p: any) => {
+        
+        if (ctx && ctx.children && ctx.children.formalParameter) {
+            const formalParameters = ctx.children.formalParameter;
+            if (Array.isArray(formalParameters)) {
+                formalParameters.forEach((p: any) => {
                     const param = p.children?.variableParaRegularParameter?.[0];
                     const paramName = this.extractFieldName(param.children?.variableDeclaratorId?.[0]);
                     const paramType = this.extractType(param.children?.unannType?.[0]);
@@ -125,7 +148,8 @@ export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
                         parameters.push({name: paramName, type: paramType});
                     }
                 });
-        });
+            }
+        }
         return parameters;
     }
 
@@ -139,6 +163,7 @@ export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
                 variableDeclaratorId = variableDeclarator.children?.methodDeclarator?.[0];
             }
             const fieldName = this.extractFieldName(variableDeclaratorId);
+            console.log(`Found field: ${fieldName}`);
             if (fieldName) {
                 fieldNames.push(fieldName);
             }
