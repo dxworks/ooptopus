@@ -109,7 +109,8 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
         if (expectedClass.methods) {
             for (const expectedMethod of expectedClass.methods) {
                 const matchingMethods = extractedClass?.methods?.filter(method =>
-                    method.name === expectedMethod.name
+                    method.name === expectedMethod.name &&
+                    JSON.stringify(method.parameters) === JSON.stringify(expectedMethod.parameters)
                 );
 
                 if (!matchingMethods || matchingMethods.length === 0) {
@@ -117,14 +118,16 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
                     continue;
                 }
 
-                const parameterMatch = matchingMethods.some(method =>
-                    JSON.stringify(method.parameters) === JSON.stringify(expectedMethod.parameters)
+                console.log(`✅ Method '${expectedMethod.name}' with parameters '${JSON.stringify(expectedMethod.parameters)}' found in class '${expectedClass.name}'.`);
+
+                const exceptionMatch = matchingMethods.some(method =>
+                    arraysEqual(method.exceptions, expectedMethod.exceptions || [])
                 );
 
-                if (!parameterMatch) {
-                    console.error(`❌ Parameter mismatch for method '${expectedMethod.name}' in class '${expectedClass.name}'. Expected parameters: '${JSON.stringify(expectedMethod.parameters)}'.`);
-                } else {
-                    console.log(`✅ Method '${expectedMethod.name}' with parameters '${JSON.stringify(expectedMethod.parameters)}' found in class '${expectedClass.name}'.`);
+                if (!exceptionMatch) {
+                    console.error(`❌ Exception mismatch for method '${expectedMethod.name}' in class '${expectedClass.name}'. Expected exceptions: '${JSON.stringify(expectedMethod.exceptions)}', Found exceptions: '${JSON.stringify(matchingMethods[0].exceptions)}'.`);
+                } else if (expectedMethod.exceptions && expectedMethod.exceptions.length > 0) {
+                    console.log(`✅ Method '${expectedMethod.name}' throws expected exceptions: '${JSON.stringify(expectedMethod.exceptions)}'.`);
                 }
             }
         }

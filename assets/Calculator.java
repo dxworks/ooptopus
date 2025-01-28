@@ -1,4 +1,10 @@
-public class Calculator extends Object implements MyInterface {
+
+import java.io.IOException;
+import java.util.EmptyStackException;
+import javax.management.RuntimeErrorException;
+
+
+public class Calculator extends Object implements Cloneable {
     private String myField;
     public boolean myInt;
 
@@ -12,10 +18,10 @@ public class Calculator extends Object implements MyInterface {
         this.myInt = constructorInt;
     }
 
-    public void myMethod() {}
-    public void myMethod(int x) {}
+    public void myMethod() throws RuntimeErrorException {}
+    public void myMethod(int x) throws EmptyStackException {}
 
-    public int addNumbers(int a, int b) {
+    public int addNumbers(int a, int b) throws IOException {
         return a + b;
     }
 }

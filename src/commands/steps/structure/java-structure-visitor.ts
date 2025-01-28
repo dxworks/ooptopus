@@ -82,13 +82,17 @@ export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
                         const methodReturnType = methodHeader ? this.unannType(methodHeader.children.result) : null;
                         const methodName = methodHeader ? this.extractFieldName(methodHeader.children.methodDeclarator?.[0]) : null;
                         const methodParameters = methodHeader ? this.formalParameterList(methodHeader.children.methodDeclarator?.[0].children.formalParameterList?.[0]) : [];
-
+                        let methodExceptions: string[] = [];
+                        if (methodHeader?.children?.throws) {
+                            methodExceptions = this.parseThrows(methodHeader.children.throws?.[0]);
+                        }
                         if (methodName && methodReturnType) {
                             this.currentClass?.methods?.push({
                                 name: methodName,
                                 returnType: methodReturnType,
                                 modifiers: methodModifiers,
                                 parameters: methodParameters,
+                                exceptions: methodExceptions,
                             });
                         }
                     });
@@ -193,5 +197,24 @@ export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
     private extractFieldName(variableDeclaratorId: any): string | null {
         if (!variableDeclaratorId?.children?.Identifier?.[0]?.image) return null;
         return variableDeclaratorId.children.Identifier[0].image;
+    }
+
+    private parseThrows(throwsCtx: any): string[] {
+        console.log("AAAAAAAAAAAAAAAAAA", throwsCtx)
+        const exceptions: string[] = [];
+        const exceptionTypeList = throwsCtx.children.exceptionTypeList?.[0];
+        // console.log("BBBBBBBBBBBBBBBBBB", exceptionTypeList)
+        if (exceptionTypeList?.children?.exceptionType) {
+            exceptionTypeList.children.exceptionType.forEach((exType: any) => {
+            console.log("BBBBBBBBBBBBBBBBBB", exType)
+
+                const exName = this.extractType(exType);
+                if (exName) {
+                    console.log("CCCCCCCCCCCCCCCCCCC", exName)
+                    exceptions.push(exName);
+                }
+            });
+        }
+        return exceptions;
     }
 }

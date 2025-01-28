@@ -22,10 +22,9 @@ const expectedStructure = {
             implements: ['MyInterface', 'Cloneable'],
             fields: [{ name: 'myField', type: 'String', modifiers: ['private'] },
                 { name: 'myInt', type: 'int', modifiers: ['public'] }],
-            methods: [{ name: 'myMethod', returnType: 'void', modifiers: ['public'], parameters: [] },
-                { name: 'myMethod', returnType: 'void', modifiers: ['public'], parameters: [{name: 'x', type: 'int'}] },
-                { name: 'addNumbers', returnType: 'int', modifiers: ['public'],
-                    parameters: [{name: 'a', type: 'int'}, {name: 'b', type: 'int'}]
+            methods: [{ name: 'myMethod', returnType: 'void', modifiers: ['public'], parameters: [], exceptions: ['IOException'] },
+                { name: 'myMethod', returnType: 'void', modifiers: ['public'], parameters: [{name: 'x', type: 'int'}], exceptions: [] },
+                { name: 'addNumbers', returnType: 'int', modifiers: ['public'], parameters: [{name: 'a', type: 'int'}, {name: 'b', type: 'int'}], exceptions: ['IOException']
                 }],
             constructors: [{ name: 'Calculator', parameters: [{name: 'constructorField', type: 'String'}, {name: 'constructorInt', type: 'boolean'}] },
                 { name: 'Calculator', parameters: [] }]
@@ -51,7 +50,7 @@ if(args._) {
         await compileJava(args.source, "./out");
         await verifyStructure(args.source, expectedStructure)
         if(args.test) {
-            console.log(blue(`Running tests with ${args.test}...`));
+            console.log(blue(`\nRunning tests with ${args.test}...`));
             await compileJava([args.source, args.test], "./out");
             await runJUnitTests(args.test, "./out");
         }

@@ -4,7 +4,7 @@ export interface JavaStructure {
         extends?: string;
         implements?: string[];
         fields?: { name: string; type: string; modifiers: string[] }[];
-        methods?: { name: string; returnType: string; modifiers: string[], parameters: { name: string; type: string; }[]; }[];
+        methods?: { name: string; returnType: string; modifiers: string[]; parameters: { name: string; type: string; }[]; exceptions: string[]; }[];
         constructors?: { name: string; parameters: { name: string; type: string; }[]; }[];
     }[];
 }
