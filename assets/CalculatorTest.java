@@ -1,10 +1,11 @@
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 public class CalculatorTest {
     @Test
-    void testAddNumbers() {
+    void testAddNumbers() throws IOException {
         String myField = "Hello";
         boolean myInt = true;
         Calculator calc = new Calculator(myField, myInt);

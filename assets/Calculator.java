@@ -4,7 +4,7 @@ import java.util.EmptyStackException;
 import javax.management.RuntimeErrorException;
 
 
-public class Calculator extends Object implements Cloneable {
+public class Calculator extends Object {
     private String myField;
     public boolean myInt;
 
