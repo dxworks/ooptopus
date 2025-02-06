@@ -1,7 +1,8 @@
 import $ from "@david/dax";
-import { bgBrightGreen, brightYellow, green, red, yellow } from "@std/fmt/colors";
+import { green, red } from "@std/fmt/colors";
+import { TestResults } from "../../grading/evaluating.model.ts";
 
-export async function runJUnitTests(testFile: string, outputDir: string): Promise<boolean> {
+export async function runJUnitTests(testFile: string, outputDir: string): Promise<TestResults> {
     try {
         const junitLibsDir = "C:\\Users\\ambra\\OneDrive\\Desktop\\licenta\\oop-evaluator\\libs";
         // const output = await $`java -cp ${outputDir};${junitLibsDir}/* org.junit.platform.console.ConsoleLauncher --class-path ${outputDir} --scan-classpath`.stderr(Deno.stdout).text();
@@ -13,6 +14,9 @@ export async function runJUnitTests(testFile: string, outputDir: string): Promis
 
         // return true;
 
+
+        let totalTests = 0;
+        let failedTests = 0;
 
         const lines = output.split('\n');
         let allTestsPassed = true;
@@ -43,8 +47,8 @@ export async function runJUnitTests(testFile: string, outputDir: string): Promis
         const testsFailedLine = lines.find(line => line.includes('tests failed'));
         
         if (testsFoundLine && testsFailedLine) {
-            const totalTests = parseInt(testsFoundLine.match(/\d+/)?.[0] || '0');
-            const failedTests = parseInt(testsFailedLine.match(/\d+/)?.[0] || '0');
+            totalTests = parseInt(testsFoundLine.match(/\d+/)?.[0] || '0');
+            failedTests = parseInt(testsFailedLine.match(/\d+/)?.[0] || '0');
             
             if (failedTests === 0) {
                 console.log(green(`\n✅ All ${totalTests} tests passed!`));
@@ -53,11 +57,11 @@ export async function runJUnitTests(testFile: string, outputDir: string): Promis
             }
         }
 
-        return allTestsPassed;
+        return {total: totalTests, passed: totalTests - failedTests};
 
 
     } catch (error) {
         console.error(red("❌ Error while running JUnit tests."), error);
-        return false;
+        return {total: 0, passed: 0};
     }
 }

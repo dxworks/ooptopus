@@ -167,7 +167,6 @@ export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
                 variableDeclaratorId = variableDeclarator.children?.methodDeclarator?.[0];
             }
             const fieldName = this.extractFieldName(variableDeclaratorId);
-            console.log(`Found field: ${fieldName}`);
             if (fieldName) {
                 fieldNames.push(fieldName);
             }
@@ -200,17 +199,13 @@ export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
     }
 
     private parseThrows(throwsCtx: any): string[] {
-        console.log("AAAAAAAAAAAAAAAAAA", throwsCtx)
         const exceptions: string[] = [];
         const exceptionTypeList = throwsCtx.children.exceptionTypeList?.[0];
-        // console.log("BBBBBBBBBBBBBBBBBB", exceptionTypeList)
         if (exceptionTypeList?.children?.exceptionType) {
             exceptionTypeList.children.exceptionType.forEach((exType: any) => {
-            console.log("BBBBBBBBBBBBBBBBBB", exType)
 
                 const exName = this.extractType(exType);
                 if (exName) {
-                    console.log("CCCCCCCCCCCCCCCCCCC", exName)
                     exceptions.push(exName);
                 }
             });

@@ -3,6 +3,8 @@ import { blue, bgWhite, red } from "@std/fmt/colors";
 import {compileJava} from "./commands/steps/compile/compile.ts";
 import {verifyStructure} from "./commands/steps/structure/structure.ts";
 import {runJUnitTests} from "./commands/steps/tests/test.ts";
+import { ClassEvaluation } from "./commands/grading/evaluating.model.ts";
+import { evaluateAll } from "./commands/grading/evaluate.ts";
 
 // Same as running `deno run example.ts --foo --bar=baz ./quux.txt`
 const args = parseArgs(Deno.args, {
@@ -29,14 +31,25 @@ const expectedStructure = {
             constructors: [{ name: 'Calculator', parameters: [{name: 'constructorField', type: 'String'}, {name: 'constructorInt', type: 'boolean'}] },
                 { name: 'Calculator', parameters: [] }]
         },
-        // {
-        //     name: 'Test2',
-        //     fields: [{ name: 'myField2', type: 'String', modifiers: ['private', 'static'] },
-        //         { name: 'myInt222', type: 'int', modifiers: ['public'] }],
-        //     methods: [{ name: 'metoda2', returnType: 'void', modifiers: ['private', 'static'],
-        //         parameters: [{name: 'x', type: 'boolean'}, {name: 'y', type: 'int'}]
-        //     }]
-        // },
+        {
+            name: "SimpleClass",
+            extends: '',
+            implements: [],
+            fields: [
+              { name: "name", type: "String", modifiers: ["private"] },
+              { name: "value", type: "int", modifiers: ["private"] }
+            ],
+            methods: [
+              { name: "getName", returnType: "String", modifiers: ["public"], parameters: [], exceptions: [] },
+              { name: "getValue", returnType: "int", modifiers: ["public"], parameters: [], exceptions: [] },
+              { name: "incrementValue", returnType: "void", modifiers: ["public"], parameters: [], exceptions: [] },
+              { name: "reset", returnType: "void", modifiers: ["public"], parameters: [], exceptions: [] }
+            ],
+            constructors: [
+              { name: "SimpleClass", parameters: [], modifiers: ["public"] },
+              { name: "SimpleClass", parameters: [ { name: "name", type: "String" }, { name: "value", type: "int" } ], modifiers: ["public"] }
+            ]
+          }
     ]
 }
 
@@ -47,12 +60,36 @@ if(args._) {
             console.error(red("Source file not provided."));
             Deno.exit(1);
         }
-        await compileJava(args.source, "./out");
-        await verifyStructure(args.source, expectedStructure)
+
+        // await compileJava(args.source, "./out");
+        let compiledOK = false;
+        try {
+          await compileJava(args.source, "./out");
+          compiledOK = true;
+        } catch (err) {
+            const errorMessage = String(err);
+            console.error(red(`Compilation failed: ${errorMessage}`));
+        }
+
+        // await verifyStructure(args.source, expectedStructure)
+        const classEvaluations: ClassEvaluation[] = await verifyStructure(args.source, expectedStructure);
+
+        let testResults = undefined;
         if(args.test) {
             console.log(blue(`\nRunning tests with ${args.test}...`));
+        //     await compileJava([args.source, args.test], "./out");
+        //     await runJUnitTests(args.test, "./out");
+        try {
             await compileJava([args.source, args.test], "./out");
-            await runJUnitTests(args.test, "./out");
+            // Suppose runJUnitTests returns an object like { total: 10, passed: 8 }
+            testResults = await runJUnitTests(args.test, "./out");
+          } catch (err) {
+            const errorMessage = String(err);
+            console.error(red(`Test run failed: ${errorMessage}`));
+          }
         }
+        console.log(blue("\nGrading..."));
+        const finalScore = evaluateAll(classEvaluations, compiledOK, testResults);
+        console.log(blue(`\n🎉🎉🎉 Final Score: ${finalScore}/100 🎉🎉🎉`));
     }
 }
