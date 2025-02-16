@@ -3,29 +3,29 @@ import java.util.EmptyStackException;
 import javax.management.RuntimeErrorException;
 
 
-public class Calculator extends Object {
-    private String myField;
-    public boolean myInt;
+// public class Calculator extends Object {
+//     private String myField;
+//     public boolean myInt;
 
-    public Calculator() {
-        this.myField = "default";
-        this.myInt = false;
-    }
+//     public Calculator() {
+//         this.myField = "default";
+//         this.myInt = false;
+//     }
 
-    public Calculator(String constructorField, boolean constructorInt) {
-        this.myField = constructorField;
-        this.myInt = constructorInt;
-    }
+//     public Calculator(String constructorField, boolean constructorInt) {
+//         this.myField = constructorField;
+//         this.myInt = constructorInt;
+//     }
 
-    private boolean myMethod() throws RuntimeErrorException {
-        return false;
-    }
-    public void myMethod(int x) throws EmptyStackException {}
+//     private boolean myMethod() throws RuntimeErrorException {
+//         return false;
+//     }
+//     public void myMethod(int x) throws EmptyStackException {}
 
-    public int addNumbers(int a, int b) throws IOException {
-        return a + b;
-    }
-}
+//     public int addNumbers(int a, int b) throws IOException {
+//         return a + b;
+//     }
+// }
 
 class SimpleClass {
     public String name;

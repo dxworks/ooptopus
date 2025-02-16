@@ -1,124 +1,201 @@
-import { yellow } from "@std/fmt/colors";
-import { ClassEvaluation, TestResults } from "./evaluating.model.ts";
-
+import {yellow} from "@std/fmt/colors";
+import {ClassEvaluation, GradingSchema} from "./evaluating.model.ts";
 
 export function evaluateAll(
-  classEvaluations: ClassEvaluation[],
-  didCompile: boolean,
-  testResults?: TestResults,
+    classEvaluations: ClassEvaluation[],
+    didCompile: boolean,
+    gradingSchema: GradingSchema,
 ): number {
   let totalPoints = 0;
   let earnedPoints = 0;
 
-  // 1) Weight for successful compilation
-  // Example: 10 points if it compiles, else 0
-  totalPoints += 10;
+  // 1) Compilation
+  totalPoints += gradingSchema.compilation;
+  let compilePoints = 0;
   if (didCompile) {
-    earnedPoints += 10;
+    compilePoints = gradingSchema.compilation;
+    earnedPoints += compilePoints;
   }
-  console.log(yellow(`Compilation: ${didCompile ? "✅" : "❌"} --- ${earnedPoints}/10 points`));
+  console.log(yellow(`Compilation ${didCompile ? "✅" : "❌"} --- ${compilePoints}/${gradingSchema.compilation} points`));
 
   // 2) Evaluate each class
   for (const clsEval of classEvaluations) {
-    totalPoints += 5;
-    let namePoints = 0;
-    if (clsEval.nameCorrect) {
-      earnedPoints += 5;
-      namePoints += 5;
-    }
-    console.log(yellow(`Class: ${clsEval.name} --- ${clsEval.nameCorrect ? "✅" : "❌"} --- ${namePoints}/5 points`));
+    console.log(yellow(`\n--- Evaluating class "${clsEval.name}" ---`));
 
-    totalPoints += 5;
-    let extendsPoints = 0;
-    if (clsEval.extendsCorrect) {
-      earnedPoints += 5;
-      extendsPoints += 5;
-    }
-    console.log(yellow(`Extends: ${clsEval.extendsCorrect ? "✅" : "❌"} --- ${extendsPoints}/5 points`));
+    // A) Class Name
+    totalPoints += gradingSchema.class.name;
+    let namePoints = clsEval.nameCorrect ? gradingSchema.class.name : 0;
+    earnedPoints += namePoints;
+    console.log(yellow(
+        `Class name correctness: ${clsEval.nameCorrect ? "✅" : "❌"} -- ${namePoints}/${gradingSchema.class.name} points`
+    ));
 
-    totalPoints += 5;
-    let implementsPoints = 0;
-    if (clsEval.implementsCorrect) {
-      earnedPoints += 5;
-      implementsPoints += 5;
-    }
-    console.log(yellow(`Implements: ${clsEval.implementsCorrect ? "✅" : "❌"} --- ${implementsPoints}/5 points`));
+    // B) Class Extends
+    totalPoints += gradingSchema.class.extends;
+    let extendsPoints = clsEval.extendsCorrect ? gradingSchema.class.extends : 0;
+    earnedPoints += extendsPoints;
+    console.log(yellow(
+        `Extends correctness: ${clsEval.extendsCorrect ? "✅" : "❌"} -- ${extendsPoints}/${gradingSchema.class.extends} points`
+    ));
 
-    // Fields     
-    let fieldPoints = 0;
-    clsEval.fieldsCorrect.forEach((field) => {
-      // For each field, let's define the weighting:
-      //   - 2 points for correct name
-      //   - 2 points for correct type
-      //   - 1 point for correct modifiers
-      totalPoints += 5; // 2 + 2 + 1
+    // C) Class Implements
+    totalPoints += gradingSchema.class.implements;
+    let implementsPoints = clsEval.implementsCorrect ? gradingSchema.class.implements : 0;
+    earnedPoints += implementsPoints;
+    console.log(yellow(
+        `Implements correctness: ${clsEval.implementsCorrect ? "✅" : "❌"} -- ${implementsPoints}/${gradingSchema.class.implements} points`
+    ));
+
+    // 3) Fields
+    console.log(yellow(`\nFields:`));
+    for (const field of clsEval.fieldsCorrect) {
+      const fieldTotal = gradingSchema.field.name
+          + gradingSchema.field.type
+          + gradingSchema.field.modifiers;
+      totalPoints += fieldTotal;
+
       let fieldScore = 0;
-      if (field.correctName) fieldScore += 2;
-      if (field.correctType) fieldScore += 2;
-      if (field.correctModifiers) fieldScore += 1;
-      fieldPoints += fieldScore;
+      let logParts: string[] = [];
+
+      // Check name
+      if (field.correctName) {
+        fieldScore += gradingSchema.field.name;
+        logParts.push(`name +${gradingSchema.field.name}`);
+      } else {
+        logParts.push(`name +0`);
+      }
+
+      // Check type
+      if (field.correctType) {
+        fieldScore += gradingSchema.field.type;
+        logParts.push(`type +${gradingSchema.field.type}`);
+      } else {
+        logParts.push(`type +0`);
+      }
+
+      // Check modifiers
+      if (field.correctModifiers) {
+        fieldScore += gradingSchema.field.modifiers;
+        logParts.push(`modifiers +${gradingSchema.field.modifiers}`);
+      } else {
+        logParts.push(`modifiers +0`);
+      }
+
       earnedPoints += fieldScore;
-    });
-    console.log(yellow(`Fields: ${fieldPoints}/5 points`));
 
-    // Methods
-    let methodPoints = 0;
-    clsEval.methodsCorrect.forEach((method) => {
-      // Weighted example:
-      //   - 2 points for correct name
-      //   - 2 points for correct params
-      //   - 2 points for correct return type
-      //   - 1 point for correct modifiers
-      //   - 1 point for correct exceptions
-      totalPoints += 8;
-      let methodScore = 0;
-      if (method.correctName) methodScore += 2;
-      if (method.correctParams) methodScore += 2;
-      if (method.correctReturnType) methodScore += 2;
-      if (method.correctModifiers) methodScore += 1;
-      if (method.correctExceptions) methodScore += 1;
-      methodPoints += methodScore;
-      earnedPoints += methodScore;
-    });
-    console.log(yellow(`Methods: ${methodPoints}/8 points`));
+      const detailString = logParts.join(", ");
+      console.log(
+          yellow(`- Field => ${detailString} = ${fieldScore}/${fieldTotal} points`)
+      );
+    }
 
-    // Constructors
-    let constructorPoints = 0;
-    clsEval.constructorsCorrect.forEach((ctor) => {
-      // Weighted example:
-      //   - 3 points for correct name
-      //   - 2 points for correct params
-      totalPoints += 5;
+    // 4) Methods
+    console.log(yellow(`\nMethods:`));
+    for (const method of clsEval.methodsCorrect) {
+      const methodBaseTotal = gradingSchema.method.name
+          + gradingSchema.method.params
+          + gradingSchema.method.returnType
+          + gradingSchema.method.modifiers
+          + gradingSchema.method.exceptions;
+
+      let methodPoints = 0;
+      let detailParts: string[] = [];
+
+      // A) Method name correctness
+      if (method.correctName) {
+        methodPoints += gradingSchema.method.name;
+        detailParts.push(`name +${gradingSchema.method.name}`);
+      } else {
+        detailParts.push(`name +0`);
+      }
+
+      // B) Method params
+      if (method.correctParams) {
+        methodPoints += gradingSchema.method.params;
+        detailParts.push(`params +${gradingSchema.method.params}`);
+      } else {
+        detailParts.push(`params +0`);
+      }
+
+      // C) Return type
+      if (method.correctReturnType) {
+        methodPoints += gradingSchema.method.returnType;
+        detailParts.push(`returnType +${gradingSchema.method.returnType}`);
+      } else {
+        detailParts.push(`returnType +0`);
+      }
+
+      // D) Modifiers
+      if (method.correctModifiers) {
+        methodPoints += gradingSchema.method.modifiers;
+        detailParts.push(`modifiers +${gradingSchema.method.modifiers}`);
+      } else {
+        detailParts.push(`modifiers +0`);
+      }
+
+      // E) Exceptions
+      if (method.correctExceptions) {
+        methodPoints += gradingSchema.method.exceptions;
+        detailParts.push(`exceptions +${gradingSchema.method.exceptions}`);
+      } else {
+        detailParts.push(`exceptions +0`);
+      }
+
+      let testPoints = 0;
+      let testTotal = 0;
+      if (method.testResults) {
+        testTotal = method.testResults.total * gradingSchema.method.tests;
+        testPoints = method.testResults.passed * gradingSchema.method.tests;
+        methodPoints += testPoints;
+
+        totalPoints += testTotal;
+
+        detailParts.push(`tests +${testPoints}/${testTotal} (passed ${method.testResults.passed}/${method.testResults.total})`);
+      }
+
+      totalPoints += methodBaseTotal;
+      earnedPoints += methodPoints;
+
+      const detailString = detailParts.join(", ");
+      const methodAllTotal = methodBaseTotal + testTotal;
+      console.log(yellow(
+          `- Method "${method.methodName}" => ${detailString} = ${methodPoints}/${methodAllTotal} points`
+      ));
+    }
+
+    // 5) Constructors
+    console.log(yellow(`\nConstructors:`));
+    for (const ctor of clsEval.constructorsCorrect) {
+      const ctorMax = gradingSchema.constructor.name + gradingSchema.constructor.params;
+      totalPoints += ctorMax;
+
       let ctorScore = 0;
-      if (ctor.correctName) ctorScore += 3;
-      if (ctor.correctParams) ctorScore += 2;
-      constructorPoints += ctorScore;
+      let logCtorParts: string[] = [];
+
+      if (ctor.correctName) {
+        ctorScore += gradingSchema.constructor.name;
+        logCtorParts.push(`name +${gradingSchema.constructor.name}`);
+      } else {
+        logCtorParts.push(`name +0`);
+      }
+
+      if (ctor.correctParams) {
+        ctorScore += gradingSchema.constructor.params;
+        logCtorParts.push(`params +${gradingSchema.constructor.params}`);
+      } else {
+        logCtorParts.push(`params +0`);
+      }
+
       earnedPoints += ctorScore;
-    });
-    console.log(yellow(`Constructors: ${constructorPoints}/5 points`));
+
+      console.log(yellow(
+          `- Constructor => ${logCtorParts.join(", ")} = ${ctorScore}/${ctorMax} points`
+      ));
+    }
   }
 
-  // 3) If we have test results, factor them in:
-  if (testResults) {
-    // max possible from tests
-    const maxTestPoints = 30;
-    // totalPoints for tests
-    totalPoints += maxTestPoints;
-
-    // Suppose each test is worth the same fraction of 30 points
-    const pointsPerTest = maxTestPoints / testResults.total;
-    const testPoints = testResults.passed * pointsPerTest;
-
-    // Add
-    earnedPoints += testPoints;
-    console.log(yellow(`Tests: ${testPoints} points`));
-  }
-
-  // 4) Convert the total points into a 0-100 scale
-  // If your total weighting is guaranteed to be 100, you can skip this. 
-  // Otherwise, you can scale it to 100:
+  // 6) Final Score Calculation
   const finalScore = (earnedPoints / totalPoints) * 100;
   console.log(yellow(`\nCalculating total: ${earnedPoints} earned/${totalPoints} total * 100 points`));
-
   return Math.round(finalScore);
 }

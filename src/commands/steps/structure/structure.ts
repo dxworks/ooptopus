@@ -143,11 +143,13 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
         if (expectedClass.methods) {
             for (const expectedMethod of expectedClass.methods) {
                 const methodEvaluation: MethodEvaluation = {
+                    methodName: '',
                     correctName: false,
                     correctParams: false,
                     correctReturnType: false,
                     correctModifiers: false,
                     correctExceptions: false,
+                    testResults: undefined
                   };
                 const matchingMethods = extractedClass?.methods?.filter(method =>
                     method.name === expectedMethod.name &&
@@ -156,11 +158,13 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
 
                 if (!matchingMethods || matchingMethods.length === 0) {
                     console.error(`❌ Method '${expectedMethod.name}' not found in class '${expectedClass.name}'. 🚫`);
+                    methodEvaluation.methodName = expectedMethod.name; 
                     continue;
                 }
 
                 console.log(`✅ Method '${expectedMethod.name}' with parameters '${JSON.stringify(expectedMethod.parameters)}' found in class '${expectedClass.name}'.`);
 
+                methodEvaluation.methodName = expectedMethod.name;
                 methodEvaluation.correctName = true;
                 methodEvaluation.correctParams = true;
 
