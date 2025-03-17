@@ -15,6 +15,36 @@ function arraysEqual(arr1: string[], arr2: string[]): boolean {
     return sortedArr1.every((value, index) => value === sortedArr2[index]);
 }
 
+function modifiersMatch(expectedModifiers: string[], actualModifiers: string[]) {
+    const expectedSet = new Set(expectedModifiers || []);
+    const actualSet = new Set(actualModifiers || []);
+
+    // If "public" is expected but missing, ensure neither "private" nor "protected" are present
+    if (expectedSet.has("public") && !actualSet.has("public")) {
+        if (actualSet.has("private") || actualSet.has("protected")) {
+            return false; // Invalid: "private" or "protected" conflicts with expected "public"
+        }
+    }
+
+    // Remove "public" from comparison since it's already handled separately
+    expectedSet.delete("public");
+    actualSet.delete("public");
+
+    // Ensure all other modifiers match exactly
+    return JSON.stringify([...expectedSet].sort()) === JSON.stringify([...actualSet].sort());
+}
+
+function areParameterTypesEqual(actualParams: { name: string; type: string; }[], expectedParams:{ name: string; type: string; }[]) {
+    if (actualParams.length !== expectedParams.length) {
+        return false; // Different number of parameters
+    }
+    return actualParams.every((actual, index) => {
+        const expected = expectedParams[index];
+        // Check type equality and ignore name if it's "*"
+        return actual.type === expected.type && (expected.name === "*" || actual.name === expected.name);
+    });
+}
+
 export async function verifyStructure(sourcePath: string, expectedStructure: JavaStructure): Promise<ClassEvaluation[]> {
 
     const decoder = new TextDecoder("utf-8");
@@ -32,6 +62,7 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
         const extractedClass = extractedClasses.find(cls => cls.name === expectedClass.name);
         const classEvaluation: ClassEvaluation = {
             name: expectedClass.name,
+            id: expectedClass.name,
             nameCorrect: false,
             extendsCorrect: false,
             implementsCorrect: false,
@@ -72,12 +103,13 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
         if (expectedClass.constructors) {
             for (const expectedConstructor of expectedClass.constructors) {
                 const constructorEval: ConstructorEvaluation = {
+                    id: '',
                     correctName: false,
                     correctParams: false,
                   };
                 const matchingConstructor = extractedClass?.constructors?.find(constructor =>
                     constructor.name === expectedConstructor.name &&
-                    JSON.stringify(constructor.parameters) === JSON.stringify(expectedConstructor.parameters)
+                    areParameterTypesEqual(constructor.parameters, expectedConstructor.parameters)
                 );
 
                 if (!matchingConstructor) {
@@ -87,6 +119,9 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
                     constructorEval.correctName = true;
                     constructorEval.correctParams = true;
                 }
+                constructorEval.id = expectedConstructor.name + '(' +
+                    expectedConstructor.parameters.map(param => `${param.type} ${param.name}`).join(', ') +
+                    ')';
                 classEvaluation.constructorsCorrect.push(constructorEval);
             }
         }
@@ -94,6 +129,7 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
         if (expectedClass.fields) {
             for (const expectedField of expectedClass.fields) {
                 const fieldEvaluation: FieldEvaluation = {
+                    id: expectedField.name,
                     correctName: false,
                     correctType: false,
                     correctModifiers: false,
@@ -143,13 +179,13 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
         if (expectedClass.methods) {
             for (const expectedMethod of expectedClass.methods) {
                 const methodEvaluation: MethodEvaluation = {
+                    id: '',
                     methodName: '',
                     correctName: false,
                     correctParams: false,
                     correctReturnType: false,
                     correctModifiers: false,
                     correctExceptions: false,
-                    testResults: undefined
                   };
                 const matchingMethods = extractedClass?.methods?.filter(method =>
                     method.name === expectedMethod.name &&
@@ -180,18 +216,29 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
                     );
                 }
 
-                if (arraysEqual(aMatch.modifiers, expectedMethod.modifiers || [])) {
+                // if (arraysEqual(aMatch.modifiers, expectedMethod.modifiers || [])) {
+                //     methodEvaluation.correctModifiers = true;
+                //     console.log(
+                //       `✅ Method '${expectedMethod.name}' modifiers are correct.`,
+                //     );
+                //   } else {
+                //     console.error(
+                //       `❌ Method '${expectedMethod.name}' modifiers mismatch: expected '${JSON.stringify(
+                //         expectedMethod.modifiers,
+                //       )}', found '${JSON.stringify(aMatch.modifiers)}'.`,
+                //     );
+                //   }
+
+                if (modifiersMatch(expectedMethod.modifiers, aMatch.modifiers)) {
                     methodEvaluation.correctModifiers = true;
-                    console.log(
-                      `✅ Method '${expectedMethod.name}' modifiers are correct.`,
-                    );
-                  } else {
+                    console.log(`✅ Method '${expectedMethod.name}' modifiers are correct.`);
+                } else {
                     console.error(
-                      `❌ Method '${expectedMethod.name}' modifiers mismatch: expected '${JSON.stringify(
-                        expectedMethod.modifiers,
-                      )}', found '${JSON.stringify(aMatch.modifiers)}'.`,
+                        `❌ Method '${expectedMethod.name}' modifiers mismatch: expected '${JSON.stringify(
+                            expectedMethod.modifiers
+                        )}', found '${JSON.stringify(aMatch.modifiers)}'.`
                     );
-                  }
+                }
 
                 const exceptionMatch = matchingMethods.some(method =>
                     arraysEqual(method.exceptions, expectedMethod.exceptions || [])
@@ -208,8 +255,11 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
                       methodEvaluation.correctExceptions = true;
                     }
                 }
+                methodEvaluation.id = expectedMethod.name + '(' +
+                    expectedMethod.parameters.map(param => `${param.type} ${param.name}`).join(', ') +
+                    ')';
                 classEvaluation.methodsCorrect.push(methodEvaluation);
-            }            
+            }
         }
     }
 

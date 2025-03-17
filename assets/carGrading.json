@@ -1,0 +1,115 @@
+{
+  "compilation": 10,
+  "classes": {
+    "Car": {
+      "name": 0,
+      "extends": 0,
+      "implements": 0,
+      "methods": {
+        "equals(Object o)": {
+          "name": 1,
+          "params": 1,
+          "returnType": 1,
+          "modifiers": 2,
+          "exceptions": 0,
+          "tests": {
+            "testCarEquals": 5
+          }
+        },
+        "toString()": {
+          "name": 1,
+          "params": 1,
+          "returnType": 1,
+          "modifiers": 2,
+          "exceptions": 0,
+          "tests": {
+            "testCarToString": 5
+          }
+        }
+      },
+      "constructors": {
+        "Car(String brand, int horsePower)": {
+          "name": 2,
+          "params": 3
+        },
+        "Car(String brand, int horsePower, double price)": {
+          "name": 2,
+          "params": 3
+        }
+      }
+    },
+    "CarSet": {
+      "name": 0,
+      "extends": 0,
+      "implements": 0,
+      "methods": {
+        "addCar(Car car)": {
+          "name": 1,
+          "params": 2,
+          "returnType": 2,
+          "modifiers": 2,
+          "exceptions": 0,
+          "tests": {
+            "testCarSetAddCar": 8
+          }
+        },
+        "removeCar(int carIndex)": {
+          "name": 1,
+          "params": 2,
+          "returnType": 1,
+          "modifiers": 1,
+          "exceptions": 0,
+          "tests": {
+            "testCarSetRemoveCar": 5
+          }
+        },
+        "toString()": {
+          "name": 1,
+          "params": 1,
+          "returnType": 1,
+          "modifiers": 1,
+          "exceptions": 0,
+          "tests": {
+            "testToStringWithMultipleCars": 6
+          }
+        },
+        "intersection(CarSet other)": {
+          "name": 1,
+          "params": 2,
+          "returnType": 2,
+          "modifiers": 2,
+          "exceptions": 0,
+          "tests": {
+            "testCarSetIntersection": 8
+          }
+        },
+        "getTotalCarsAdded()": {
+          "name": 0.25,
+          "params": 0.25,
+          "returnType": 0.25,
+          "modifiers": 0.25,
+          "exceptions": 0,
+          "tests": {
+            "testCarSetGetTotalCarsAdded": 1.5
+          }
+        },
+        "getTotalCarsDeleted()": {
+          "name": 0.25,
+          "params": 0.25,
+          "returnType": 0.25,
+          "modifiers": 0.25,
+          "exceptions": 0,
+          "tests": {
+            "testCarSetGetTotalCarsDeleted": 1.5
+          }
+        }
+      },
+      "constructors": {
+        "CarSet(int *)": {
+          "name": 2,
+          "params": 3
+        }
+      }
+    }
+  }
+}
