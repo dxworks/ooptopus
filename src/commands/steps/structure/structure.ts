@@ -34,17 +34,6 @@ function modifiersMatch(expectedModifiers: string[], actualModifiers: string[]) 
     return JSON.stringify([...expectedSet].sort()) === JSON.stringify([...actualSet].sort());
 }
 
-function areParameterTypesEqual(actualParams: { name: string; type: string; }[], expectedParams:{ name: string; type: string; }[]) {
-    if (actualParams.length !== expectedParams.length) {
-        return false; // Different number of parameters
-    }
-    return actualParams.every((actual, index) => {
-        const expected = expectedParams[index];
-        // Check type equality and ignore name if it's "*"
-        return actual.type === expected.type && (expected.name === "*" || actual.name === expected.name);
-    });
-}
-
 export async function verifyStructure(sourcePath: string, expectedStructure: JavaStructure): Promise<ClassEvaluation[]> {
 
     const decoder = new TextDecoder("utf-8");
@@ -107,9 +96,10 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
                     correctName: false,
                     correctParams: false,
                   };
-                const matchingConstructor = extractedClass?.constructors?.find(constructor =>
+
+                const matchingConstructor = extractedClass?.constructors?.filter(constructor =>
                     constructor.name === expectedConstructor.name &&
-                    areParameterTypesEqual(constructor.parameters, expectedConstructor.parameters)
+                    JSON.stringify(constructor.parameters.map(p => p.type)) === JSON.stringify(expectedConstructor.parameters.map(p => p.type))
                 );
 
                 if (!matchingConstructor) {
@@ -189,7 +179,8 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
                   };
                 const matchingMethods = extractedClass?.methods?.filter(method =>
                     method.name === expectedMethod.name &&
-                    JSON.stringify(method.parameters) === JSON.stringify(expectedMethod.parameters)
+                    JSON.stringify(method.parameters.map(p => p.type)) ===
+                    JSON.stringify(expectedMethod.parameters.map(p => p.type))
                 );
 
                 if (!matchingMethods || matchingMethods.length === 0) {

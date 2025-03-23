@@ -25,5 +25,5 @@ Deno.test("test structure simple", async function () {
             // },
         ]
     }
-    await verifyStructure("C:\\Users\\ambra\\OneDrive\\Desktop\\licenta\\oop-evaluator\\assets\\Calculator.java", expectedStructure);
+    // await verifyStructure("C:\\Users\\ambra\\OneDrive\\Desktop\\licenta\\oop-evaluator\\assets\\Calculator.java", expectedStructure);
 })

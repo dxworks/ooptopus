@@ -1,12 +1,16 @@
 import {yellow} from "@std/fmt/colors";
 import {ClassEvaluation, GradingSchema, TestResults} from "./evaluating.model.ts";
+import {ClassMetrics, generateMetricsCSV, SolutionMetrics} from "./generateMetrics.ts";
 
 export function evaluateAll(
     classEvaluations: ClassEvaluation[],
     didCompile: boolean,
     gradingSchema: GradingSchema,
-    testResults?: TestResults[],
-) {
+    generateIndividualCSV: boolean,
+    testResults?: TestResults[]
+): SolutionMetrics | number {
+    const metricsCollection: ClassMetrics[] = [];
+
     let totalPoints = 0;
     let earnedPoints = 0;
 
@@ -18,6 +22,11 @@ export function evaluateAll(
 
     // 2) Evaluate each class based on the grading schema
     for (const className in gradingSchema.classes) {
+        const currentClassMetrics: ClassMetrics = {
+            className,
+            methods: new Map()
+        };
+
         const gradingClass = gradingSchema.classes[className];
         const clsEval = classEvaluations.find(cls => cls.name === className);
 
@@ -151,6 +160,13 @@ export function evaluateAll(
             totalPoints += methodBaseTotal;
             earnedPoints += methodPoints;
 
+            const noCommaMethodName = methodName.replace(/,/g, '+');
+            currentClassMetrics.methods.set(methodName, {
+                earned: didCompile ? methodPoints : 0,
+                total: methodBaseTotal + testTotal,
+                difference: (methodBaseTotal + testTotal) - methodPoints
+            });
+
             console.log(yellow(`- Method "${methodName}" => ${methodPoints}/${methodBaseTotal + testTotal} points`));
         }
 
@@ -179,12 +195,31 @@ export function evaluateAll(
             }
 
             earnedPoints += ctorScore;
+
+            const noCommaCtorName = ctorName.replace(/,/g, '+');
+            currentClassMetrics.methods.set(noCommaCtorName, {
+                earned: didCompile ? ctorScore : 0,
+                total: ctorMax,
+                difference: ctorMax - ctorScore
+            });
+
             console.log(yellow(`- Constructor "${ctorName}" => ${ctorScore}/${ctorMax} points`));
         }
+        metricsCollection.push(currentClassMetrics);
     }
 
     // 6) Final Score Calculation
-    const finalScore = (earnedPoints / totalPoints) * 100;
+    const finalScore = didCompile ? (earnedPoints / totalPoints) * 100 : 10;
     console.log(yellow(`\nCalculating total: ${earnedPoints} earned/${totalPoints} total * 100 points`));
-    return Math.round(finalScore);
+    const roundedScore = Math.round(finalScore);
+
+    if (generateIndividualCSV) {
+        generateMetricsCSV(metricsCollection);
+        return Math.round(finalScore);
+    } else {
+        return {
+            totalScore: roundedScore,
+            classes: metricsCollection
+        };
+    }
 }
