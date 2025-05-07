@@ -135,9 +135,7 @@ if (args._) {
       args.source as string,
       outputPath,
     );
-    if (structure) {
-      console.log(JSON.stringify(structure, null, 2));
-    } else {
+    if (!structure) {
       console.error(red("Failed to extract structure."));
       Deno.exit(1);
     }
