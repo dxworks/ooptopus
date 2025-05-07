@@ -19,22 +19,19 @@ function modifiersMatch(expectedModifiers: string[], actualModifiers: string[]) 
     const expectedSet = new Set(expectedModifiers || []);
     const actualSet = new Set(actualModifiers || []);
 
-    // If "public" is expected but missing, ensure neither "private" nor "protected" are present
     if (expectedSet.has("public") && !actualSet.has("public")) {
         if (actualSet.has("private") || actualSet.has("protected")) {
-            return false; // Invalid: "private" or "protected" conflicts with expected "public"
+            return false;
         }
     }
 
-    // Remove "public" from comparison since it's already handled separately
     expectedSet.delete("public");
     actualSet.delete("public");
 
-    // Ensure all other modifiers match exactly
     return JSON.stringify([...expectedSet].sort()) === JSON.stringify([...actualSet].sort());
 }
 
-export async function verifyStructure(sourcePath: string, expectedStructure: JavaStructure): Promise<ClassEvaluation[]> {
+export function verifyStructure(sourcePath: string, expectedStructure: JavaStructure): ClassEvaluation[] {
 
     const decoder = new TextDecoder("utf-8");
     const code = decoder.decode(Deno.readFileSync(sourcePath));
@@ -110,7 +107,7 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
                     constructorEval.correctParams = true;
                 }
                 constructorEval.id = expectedConstructor.name + '(' +
-                    expectedConstructor.parameters.map(param => `${param.type} ${param.name}`).join(', ') +
+                    expectedConstructor.parameters.map(param => param.type).join(', ') +
                     ')';
                 classEvaluation.constructorsCorrect.push(constructorEval);
             }
@@ -207,19 +204,6 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
                     );
                 }
 
-                // if (arraysEqual(aMatch.modifiers, expectedMethod.modifiers || [])) {
-                //     methodEvaluation.correctModifiers = true;
-                //     console.log(
-                //       `✅ Method '${expectedMethod.name}' modifiers are correct.`,
-                //     );
-                //   } else {
-                //     console.error(
-                //       `❌ Method '${expectedMethod.name}' modifiers mismatch: expected '${JSON.stringify(
-                //         expectedMethod.modifiers,
-                //       )}', found '${JSON.stringify(aMatch.modifiers)}'.`,
-                //     );
-                //   }
-
                 if (modifiersMatch(expectedMethod.modifiers, aMatch.modifiers)) {
                     methodEvaluation.correctModifiers = true;
                     console.log(`✅ Method '${expectedMethod.name}' modifiers are correct.`);
@@ -247,7 +231,7 @@ export async function verifyStructure(sourcePath: string, expectedStructure: Jav
                     }
                 }
                 methodEvaluation.id = expectedMethod.name + '(' +
-                    expectedMethod.parameters.map(param => `${param.type} ${param.name}`).join(', ') +
+                    expectedMethod.parameters.map(param => param.type).join(', ') +
                     ')';
                 classEvaluation.methodsCorrect.push(methodEvaluation);
             }

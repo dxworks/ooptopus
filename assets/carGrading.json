@@ -6,7 +6,7 @@
       "extends": 0,
       "implements": 0,
       "methods": {
-        "equals(Object o)": {
+        "equals(Object)": {
           "name": 1,
           "params": 1,
           "returnType": 1,
@@ -28,11 +28,11 @@
         }
       },
       "constructors": {
-        "Car(String brand, int horsePower)": {
+        "Car(String, int)": {
           "name": 2,
           "params": 3
         },
-        "Car(String brand, int horsePower, double price)": {
+        "Car(String, int, double)": {
           "name": 2,
           "params": 3
         }
@@ -43,7 +43,7 @@
       "extends": 0,
       "implements": 0,
       "methods": {
-        "addCar(Car car)": {
+        "addCar(Car)": {
           "name": 1,
           "params": 2,
           "returnType": 2,
@@ -53,7 +53,7 @@
             "testCarSetAddCar": 8
           }
         },
-        "removeCar(int carIndex)": {
+        "removeCar(int)": {
           "name": 1,
           "params": 2,
           "returnType": 1,
@@ -73,7 +73,7 @@
             "testToStringWithMultipleCars": 6
           }
         },
-        "intersection(CarSet other)": {
+        "intersection(CarSet)": {
           "name": 1,
           "params": 2,
           "returnType": 2,
@@ -105,7 +105,7 @@
         }
       },
       "constructors": {
-        "CarSet(int *)": {
+        "CarSet(int)": {
           "name": 2,
           "params": 3
         }

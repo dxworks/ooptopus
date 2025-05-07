@@ -360,11 +360,11 @@ class Car
         price = 19999.99;
     }
 
-    public boolean equals (Object o)
+    public boolean equals (Object obj)
     {
-        if (o instanceof Car)
+        if (obj instanceof Car)
         {
-            return ((this.brand.equals(((Car)o).brand)) && (this.horsePower == ((Car)o).horsePower));
+            return ((this.brand.equals(((Car)obj).brand)) && (this.horsePower == ((Car)obj).horsePower));
         }
         else
         {
