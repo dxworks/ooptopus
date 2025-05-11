@@ -2,26 +2,33 @@ import { blue, green, red } from "@std/fmt/colors";
 import { JavaStructure } from "./structure-types.ts";
 import { extractStructure } from "./extract-structure.ts";
 
-function generateStructureCSV(structure: JavaStructure): string {
-    const rows: string[] = [];
+function generateStructureCSV(structure: JavaStructure): { mapping: string, fallback: string } {
+    const mappingRows: string[] = [];
+    const fallbackRows: string[] = [];
     
     for (const cls of structure.classes) {
-        rows.push(`${cls.name},<student class name>,class`);
+        mappingRows.push(`${cls.name},<student class name>,class`);
+        fallbackRows.push(`${cls.name},${cls.name},class`);
         
         if (cls.methods) {
             for (const method of cls.methods) {
-                rows.push(`${cls.name}.${method.name},<student method name>,method`);
+                mappingRows.push(`${cls.name}.${method.name},<student method name>,method`);
+                fallbackRows.push(`${cls.name}.${method.name},${method.name},method`);
             }
         }
         
         if (cls.fields) {
             for (const field of cls.fields) {
-                rows.push(`${cls.name}.${field.name},<student variable name>,variable`);
+                mappingRows.push(`${cls.name}.${field.name},<student variable name>,variable`);
+                fallbackRows.push(`${cls.name}.${field.name},${field.name},variable`);
             }
         }
     }
     
-    return rows.join('\n');
+    return {
+        mapping: mappingRows.join('\n'),
+        fallback: fallbackRows.join('\n')
+    };
 }
 
 export async function extractJavaStructure(sourcePath: string, outputPath?: string): Promise<JavaStructure | null> {
@@ -45,13 +52,16 @@ export async function extractJavaStructure(sourcePath: string, outputPath?: stri
                 const fileName = outputPath.split('/').pop()?.replace('.json', '') || 'structure';
                 const jsonPath = `${baseDir}/${fileName}.json`;
                 const csvPath = `${baseDir}/${fileName}.csv`;
+                const fallbackCsvPath = `${baseDir}/${fileName}.fallback.csv`;
                 
                 await Deno.writeTextFile(jsonPath, JSON.stringify(structure, null, 2));
                 console.log(green(`✅ Structure saved to ${jsonPath}`));
                 
-                const csvContent = generateStructureCSV(structure);
-                await Deno.writeTextFile(csvPath, csvContent);
+                const { mapping, fallback } = generateStructureCSV(structure);
+                await Deno.writeTextFile(csvPath, mapping);
                 console.log(green(`✅ Structure CSV saved to ${csvPath}`));
+                await Deno.writeTextFile(fallbackCsvPath, fallback);
+                console.log(green(`✅ Structure fallback CSV saved to ${fallbackCsvPath}`));
             } catch (writeError: unknown) {
                 const errorMessage = writeError instanceof Error ? writeError.message : String(writeError);
                 console.error(red(`❌ Failed to save structure to file: ${errorMessage}`));

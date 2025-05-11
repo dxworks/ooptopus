@@ -6,9 +6,6 @@ import { extractJavaStructure } from "./commands/steps/structure/extract-structu
 import { runJUnitTests } from "./commands/steps/tests/test.ts";
 import { ClassEvaluation } from "./commands/grading/evaluating.model.ts";
 import { evaluateAll } from "./commands/grading/evaluate.ts";
-import defaultGrading from "../assets/defaultGrading.json" with {
-  type: "json",
-};
 import { JavaStructure } from "./commands/steps/structure/structure-types.ts";
 import {
   generateCombinedMetricsCSV,
@@ -78,7 +75,7 @@ if (args._) {
       Deno.exit(1);
     }
 
-    let gradingSchema = defaultGrading;
+    let gradingSchema;
     if (args.grading && typeof args.grading === "string") {
       try {
         const schemaContent = await Deno.readTextFile(args.grading);
@@ -129,7 +126,7 @@ if (args._) {
       Deno.exit(1);
     }
 
-    const outputPath = "./assets/ExpectedStructure.json";
+    const outputPath = "./assets/expected-structure/ExpectedStructure.json";
 
     const structure = await extractJavaStructure(
       args.source as string,
@@ -167,7 +164,12 @@ async function processSolution(
     classEvaluations = returnEmptyClassEvaluations(expectedStructure);
   }
 
-  await runAssistant(sourcePath);
+  if (!args["expected-structure"]) {
+    console.error(red("Expected structure path not provided."));
+    Deno.exit(1);
+  }
+  const expectedStructureCsvPath = args["expected-structure"].replace(".json", ".csv");
+  await runAssistant(sourcePath, expectedStructureCsvPath);
 
   let testResults = undefined;
   if (testPath && compiledOK) {
