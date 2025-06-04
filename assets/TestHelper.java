@@ -12,18 +12,32 @@ public class TestHelper {
     private static Map<String, StructureEntityAlias> entityAliases;
 
     public static Object getPrivateField(Object obj, String fieldName) throws Exception {
-        Field field = obj.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return field.get(obj);
+        Class<?> clazz = obj.getClass();
+        while (clazz != null) {
+            try {
+                Field field = clazz.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                return field.get(obj);
+            } catch (NoSuchFieldException e) {
+                clazz = clazz.getSuperclass();
+            }
+        }
+        throw new NoSuchFieldException(fieldName);
     }
 
     public static Object invokePrivateMethod(Object objOrClass, String methodName, Class<?>[] paramTypes, Object... args) throws Exception {
         Class<?> clazz = (objOrClass instanceof Class) ? (Class<?>) objOrClass : objOrClass.getClass();
-        Method method = clazz.getDeclaredMethod(methodName, paramTypes);
-        method.setAccessible(true);
-
-        boolean isStatic = java.lang.reflect.Modifier.isStatic(method.getModifiers());
-        return method.invoke(isStatic ? null : objOrClass, args);
+        while (clazz != null) {
+            try {
+                Method method = clazz.getDeclaredMethod(methodName, paramTypes);
+                method.setAccessible(true);
+                boolean isStatic = java.lang.reflect.Modifier.isStatic(method.getModifiers());
+                return method.invoke(isStatic ? null : objOrClass, args);
+            } catch (NoSuchMethodException e) {
+                clazz = clazz.getSuperclass();
+            }
+        }
+        throw new NoSuchMethodException(methodName);
     }
 
     public static void setPrivateField(Object obj, String fieldName, Object value) throws Exception {
@@ -42,6 +56,11 @@ public class TestHelper {
         Field field = clazz.getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(null, value);
+    }
+
+    public static Object getClassInstance(String className, Class<?>[] paramTypes, Object... args) throws Exception {
+        Class<?> clazz = Class.forName(className);
+        return clazz.getConstructor(paramTypes).newInstance(args);
     }
 
     public static String getMappedEntity(String entityName) {

@@ -25,7 +25,8 @@ export async function compileJava(
         const junitLibsDir =
             "C:\\Users\\ambra\\OneDrive\\Desktop\\licenta\\oop-evaluator\\libs";
 
-        await $`javac -cp ${junitLibsDir}/* -d ${outputDir} ${sourcePath}`.printCommand().stderr(Deno.stdout).text();
+        await $`javac -cp ${junitLibsDir}/* -d ${outputDir} ${sourcePath}`
+            .printCommand().stderr(Deno.stdout).text();
 
 
         console.log(green("✅ Compilation successful."));

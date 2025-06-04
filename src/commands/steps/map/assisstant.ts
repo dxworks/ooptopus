@@ -7,27 +7,32 @@ const openai = new OpenAI({
   apiKey: Deno.env.get("OPENAI_API_KEY") || env["OPENAI_API_KEY"],
 });
 
-async function createAssistantWithCSV(expectedStructurePath: string): Promise<string> {
+let cachedAssistantId: string | null = null;
+
+async function createAssistantWithCSV(expectedStructurePath: string, isBatchMode: boolean = false): Promise<string> {
+  if (isBatchMode && cachedAssistantId) {
+    return cachedAssistantId;
+  }
+
   const csvContent = await Deno.readTextFile(expectedStructurePath);
   const templateAssistantId = Deno.env.get("OPEN_AI_TEMPLATE_ASSISTANT") || env["OPEN_AI_TEMPLATE_ASSISTANT"];
-  
-  // Get the template assistant to copy its instructions
+
   const templateAssistant = await openai.beta.assistants.retrieve(templateAssistantId);
-  
-  // Create a new assistant with the template's instructions plus the CSV
+
   const newAssistant = await openai.beta.assistants.create({
-    name: "Code Structure Mapper",
+    name: "Code Structure Mapper update batch mode",
     instructions: templateAssistant.instructions + "\n\nExpected structure CSV:\n" + csvContent,
     model: "gpt-4-turbo-preview",
   });
 
+  if (isBatchMode) {
+    cachedAssistantId = newAssistant.id;
+  }
   return newAssistant.id;
 }
 
-export async function runAssistant(sourcePath: string, expectedStructurePath: string) {
-  console.log(
-    blue("\nRunning assistant to generate mappings for: " + sourcePath),
-  );
+export async function runAssistant(sourcePath: string, expectedStructurePath: string, isBatchMode: boolean = false) {
+  console.log(blue("\nRunning assistant to generate mappings for: " + sourcePath),);
 
   try {
     const sourceCode = await Deno.readTextFile(sourcePath);
@@ -43,8 +48,8 @@ export async function runAssistant(sourcePath: string, expectedStructurePath: st
       },
     );
 
-    const assistantId = await createAssistantWithCSV(expectedStructurePath);
-    console.log(blue("Created new assistant with expected structure CSV."));
+    const assistantId = await createAssistantWithCSV(expectedStructurePath, isBatchMode);
+    console.log(blue(isBatchMode ? "Using assistant with expected structure CSV." : "Created new assistant with expected structure CSV."));
 
     const run = await openai.beta.threads.runs.createAndPoll(
       thread.id,
@@ -76,15 +81,12 @@ export async function runAssistant(sourcePath: string, expectedStructurePath: st
         if (jsonMatch && jsonMatch[1]) {
           try {
             const mappingJson = jsonMatch[1];
-            console.log(blue("Extracted mapping JSON from code block:"));
-            console.log(mappingJson);
             mappingLines = JSON.parse(mappingJson);
           } catch (error) {
             console.error(red(`Error parsing JSON from code block: ${error}`));
           }
         } 
-        
-        // If that fails, try to parse the entire response as JSON
+
         if (!mappingLines) {
           try {
             const jsonObj = JSON.parse(response);

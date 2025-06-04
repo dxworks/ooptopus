@@ -4,7 +4,7 @@ import { compileJava } from "./commands/steps/compile/compile.ts";
 import { verifyStructure } from "./commands/steps/structure/structure.ts";
 import { extractJavaStructure } from "./commands/steps/structure/extract-structure-command.ts";
 import { runJUnitTests } from "./commands/steps/tests/test.ts";
-import { ClassEvaluation } from "./commands/grading/evaluating.model.ts";
+import {ClassEvaluation, InterfaceEvaluation} from "./commands/grading/evaluating.model.ts";
 import { evaluateAll } from "./commands/grading/evaluate.ts";
 import { JavaStructure } from "./commands/steps/structure/structure-types.ts";
 import {
@@ -17,13 +17,7 @@ import { runAssistant } from "./commands/steps/map/assisstant.ts";
 const args = parseArgs(Deno.args, {
   string: ["source", "test", "grading", "expected-structure"],
   boolean: ["batch"],
-  alias: {
-    source: "s",
-    test: "t",
-    grading: "g",
-    batch: "b",
-    "expected-structure": "e",
-  },
+  alias: { source: "s", test: "t", grading: "g", batch: "b", "expected-structure": "e" },
   stopEarly: true,
 });
 
@@ -55,23 +49,14 @@ if (args._) {
     }
 
     let expectedStructure: JavaStructure | null = null;
-    if (
-      args["expected-structure"] &&
-      typeof args["expected-structure"] === "string"
-    ) {
-      expectedStructure = await loadExpectedStructure(
-        args["expected-structure"],
-      );
+    if (args["expected-structure"] && typeof args["expected-structure"] === "string") {
+      expectedStructure = await loadExpectedStructure(args["expected-structure"]);
       if (!expectedStructure) {
         console.error(red("Failed to load expected structure. Exiting."));
         Deno.exit(1);
       }
     } else {
-      console.error(
-        red(
-          "Expected structure file not provided. Please use --expected-structure parameter.",
-        ),
-      );
+      console.error(red("Expected structure file not provided. Please use --expected-structure parameter."));
       Deno.exit(1);
     }
 
@@ -127,16 +112,17 @@ if (args._) {
     }
 
     const outputPath = "./assets/expected-structure/ExpectedStructure.json";
-
     const structure = await extractJavaStructure(
       args.source as string,
       outputPath,
     );
+
     if (!structure) {
       console.error(red("Failed to extract structure."));
       Deno.exit(1);
     }
   }
+
 }
 
 async function processSolution(
@@ -157,11 +143,15 @@ async function processSolution(
   }
 
   let classEvaluations: ClassEvaluation[];
+  let interfaceEvaluations: InterfaceEvaluation[];
 
   if (compiledOK) {
-    classEvaluations = await verifyStructure(sourcePath, expectedStructure);
+    const { classEvaluations: classEvals, interfaceEvaluations: interfaceEvals } = verifyStructure(sourcePath, expectedStructure);
+    classEvaluations = classEvals;
+    interfaceEvaluations = interfaceEvals;
   } else {
     classEvaluations = returnEmptyClassEvaluations(expectedStructure);
+    interfaceEvaluations = returnEmptyInterfaceEvaluations(expectedStructure);
   }
 
   if (!args["expected-structure"]) {
@@ -169,7 +159,7 @@ async function processSolution(
     Deno.exit(1);
   }
   const expectedStructureCsvPath = args["expected-structure"].replace(".json", ".csv");
-  await runAssistant(sourcePath, expectedStructureCsvPath);
+  await runAssistant(sourcePath, expectedStructureCsvPath, args.batch);
 
   let testResults = undefined;
   if (testPath && compiledOK) {
@@ -179,7 +169,7 @@ async function processSolution(
         [sourcePath, testPath, "assets/TestHelper.java"],
         "./out",
       );
-      testResults = await runJUnitTests("./out");
+      testResults = await runJUnitTests("./out", testPath);
     } catch (err) {
       const errorMessage = String(err);
       console.error(red(`Test run failed: ${errorMessage}`));
@@ -188,6 +178,7 @@ async function processSolution(
 
   const metrics = evaluateAll(
     classEvaluations,
+    interfaceEvaluations,
     compiledOK,
     gradingSchema,
     generateIndividualCSV,
@@ -204,6 +195,34 @@ async function processSolution(
   return metrics;
 }
 
+function returnEmptyInterfaceEvaluations(
+  expectedStructure: JavaStructure,
+): InterfaceEvaluation[] {
+  return expectedStructure.interfaces.map((expectedInterface) => ({
+    id: expectedInterface.name,
+    name: expectedInterface.name,
+    nameCorrect: false,
+    extendsCorrect: false,
+    methodsCorrect: expectedInterface.methods?.map((method) => ({
+      id: method.name + "(" + method.parameters.map((param) =>
+        param.type
+      ).join(", ") + ")",
+      methodName: method.name,
+      correctName: false,
+      correctParams: false,
+      correctReturnType: false,
+      correctModifiers: false,
+      correctExceptions: false,
+    })) || [],
+    constantsCorrect: expectedInterface.constants?.map((constant) => ({
+      id: constant.name,
+      correctName: false,
+      correctType: false,
+      correctModifiers: false,
+    })) || [],
+  }));
+}
+
 function returnEmptyClassEvaluations(
   expectedStructure: JavaStructure,
 ): ClassEvaluation[] {
@@ -213,6 +232,7 @@ function returnEmptyClassEvaluations(
     nameCorrect: false,
     extendsCorrect: false,
     implementsCorrect: false,
+    modifiersCorrect: false,
     fieldsCorrect: expectedClass.fields?.map((field) => ({
       id: field.name,
       correctName: false,

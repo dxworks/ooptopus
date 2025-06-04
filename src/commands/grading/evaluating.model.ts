@@ -21,12 +21,22 @@ export interface ConstructorEvaluation {
   correctParams: boolean;
 }
 
+export interface InterfaceEvaluation {
+  id: string;
+  name: string;
+  nameCorrect: boolean;
+  extendsCorrect: boolean;
+  methodsCorrect: MethodEvaluation[];
+  constantsCorrect: FieldEvaluation[];
+}
+
 export interface ClassEvaluation {
   id: string;
   name: string;
   nameCorrect: boolean;
   extendsCorrect: boolean;
   implementsCorrect: boolean;
+  modifiersCorrect: boolean;
   fieldsCorrect: FieldEvaluation[];
   methodsCorrect: MethodEvaluation[];
   constructorsCorrect: ConstructorEvaluation[];
@@ -57,10 +67,18 @@ export interface ConstructorSchema {
   params: number;
 }
 
+export interface InterfaceSchema {
+  name: number;
+  extends: number;
+  methods: Record<string, MethodSchema>;
+  constants: Record<string, FieldSchema>;
+}
+
 export interface ClassSchema {
   name: number;
   extends: number;
   implements: number;
+  modifiers: number;
   fields: Record<string, FieldSchema>;
   methods: Record<string, MethodSchema>;
   constructors: Record<string, ConstructorSchema>;
@@ -69,4 +87,5 @@ export interface ClassSchema {
 export interface GradingSchema {
   compilation: number;
   classes: Record<string, ClassSchema>;
+  interfaces: Record<string, InterfaceSchema>;
 }

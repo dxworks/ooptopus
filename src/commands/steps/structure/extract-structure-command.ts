@@ -25,6 +25,25 @@ function generateStructureCSV(structure: JavaStructure): { mapping: string, fall
         }
     }
     
+    for (const intf of structure.interfaces) {
+        mappingRows.push(`${intf.name},<student interface name>,interface`);
+        fallbackRows.push(`${intf.name},${intf.name},interface`);
+        
+        if (intf.methods) {
+            for (const method of intf.methods) {
+                mappingRows.push(`${intf.name}.${method.name},<student method name>,method`);
+                fallbackRows.push(`${intf.name}.${method.name},${method.name},method`);
+            }
+        }
+        
+        if (intf.constants) {
+            for (const constant of intf.constants) {
+                mappingRows.push(`${intf.name}.${constant.name},<student constant name>,constant`);
+                fallbackRows.push(`${intf.name}.${constant.name},${constant.name},constant`);
+            }
+        }
+    }
+    
     return {
         mapping: mappingRows.join('\n'),
         fallback: fallbackRows.join('\n')
@@ -49,7 +68,8 @@ export async function extractJavaStructure(sourcePath: string, outputPath?: stri
                     }
                 }
                 
-                const fileName = outputPath.split('/').pop()?.replace('.json', '') || 'structure';
+                const fileName = outputPath.split('/')
+                    .pop()?.replace('.json', '') || 'structure';
                 const jsonPath = `${baseDir}/${fileName}.json`;
                 const csvPath = `${baseDir}/${fileName}.csv`;
                 const fallbackCsvPath = `${baseDir}/${fileName}.fallback.csv`;
@@ -62,6 +82,8 @@ export async function extractJavaStructure(sourcePath: string, outputPath?: stri
                 console.log(green(`✅ Structure CSV saved to ${csvPath}`));
                 await Deno.writeTextFile(fallbackCsvPath, fallback);
                 console.log(green(`✅ Structure fallback CSV saved to ${fallbackCsvPath}`));
+
+
             } catch (writeError: unknown) {
                 const errorMessage = writeError instanceof Error ? writeError.message : String(writeError);
                 console.error(red(`❌ Failed to save structure to file: ${errorMessage}`));

@@ -2,21 +2,35 @@ import { BaseJavaCstVisitorWithDefaults } from "java-parser";
 import { JavaStructure } from "./structure-types.ts";
 
 export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
-  public structure: JavaStructure = { classes: [] };
+  public structure: JavaStructure = { classes: [], interfaces: [] };
   private currentClass: JavaStructure["classes"][0] | null = null;
+  private currentInterface: JavaStructure["interfaces"][0] | null = null;
+
+  override classDeclaration(ctx: any) {
+    if (this.currentClass) {
+      this.structure.classes.push(this.currentClass);
+    }
+
+    this.currentClass = {
+      name: '',
+      modifiers: [],
+      fields: [],
+      methods: [],
+      constructors: [],
+    };
+
+    if (ctx.classModifier) {
+      this.currentClass.modifiers = this.fieldModifier(ctx.classModifier);
+    }
+
+    super.classDeclaration(ctx);
+  }
 
   override normalClassDeclaration(ctx: any) {
-    if (ctx.typeIdentifier) {
+    if (ctx.typeIdentifier && this.currentClass) {
       const className = ctx.typeIdentifier[0].children.Identifier[0].image;
-      if (this.currentClass) {
-        this.structure.classes.push(this.currentClass);
-      }
-      this.currentClass = {
-        name: className,
-        fields: [],
-        methods: [],
-        constructors: [],
-      };
+      this.currentClass.name = className;
+
 
       if (ctx.classExtends) {
         this.currentClass.extends =
@@ -37,6 +51,31 @@ export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
     super.normalClassDeclaration(ctx);
   }
 
+  override normalInterfaceDeclaration(ctx: any) {
+    if (ctx.typeIdentifier) {
+      const interfaceName = ctx.typeIdentifier[0].children.Identifier[0].image;
+      if (this.currentInterface) {
+        this.structure.interfaces.push(this.currentInterface);
+      }
+      this.currentInterface = {
+        name: interfaceName,
+        methods: [],
+        constants: []
+      };
+
+      if (ctx.interfaceExtends) {
+        this.currentInterface.extends = ctx.interfaceExtends[0].children
+          .interfaceTypeList[0].children.interfaceType.map(
+            (interfaceType: any) => {
+              return interfaceType.children.classType[0].children.Identifier[0]
+                .image;
+            },
+          );
+      }
+    }
+    super.normalInterfaceDeclaration(ctx);
+  }
+
   override classBodyDeclaration(ctx: any) {
     if (!this.currentClass) {
       console.error("No active class to add members to.");
@@ -45,13 +84,11 @@ export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
 
     if (ctx.constructorDeclaration) {
       ctx.constructorDeclaration.forEach((constructorDeclaration: any) => {
+
         const constructorName = this.currentClass?.name || "UnnamedConstructor";
-        const constructorDeclarator = constructorDeclaration.children
-          .constructorDeclarator?.[0];
+        const constructorDeclarator = constructorDeclaration.children.constructorDeclarator?.[0];
         const constructorParameters = constructorDeclarator
-          ? this.formalParameterList(
-            constructorDeclarator.children.formalParameterList?.[0],
-          )
+          ? this.formalParameterList(constructorDeclarator.children.formalParameterList?.[0])
           : [];
 
         if (constructorName && constructorParameters) {
@@ -98,30 +135,24 @@ export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
         if (classMemberDeclaration.children.methodDeclaration) {
           classMemberDeclaration.children.methodDeclaration.forEach(
             (methodDeclaration: any) => {
-              const methodModifiers = methodDeclaration.children.methodModifier
+              const methodModifiers =
+                  methodDeclaration.children.methodModifier
                 ? this.fieldModifier(methodDeclaration.children.methodModifier)
                 : [];
               const methodHeader = methodDeclaration.children.methodHeader?.[0];
-              const methodReturnType = methodHeader
-                ? this.unannType(methodHeader.children.result)
+              const methodReturnType = methodHeader ? this.unannType(methodHeader.children.result)
                 : null;
               const methodName = methodHeader
-                ? this.extractFieldName(
-                  methodHeader.children.methodDeclarator?.[0],
-                )
+                ? this.extractFieldName(methodHeader.children.methodDeclarator?.[0])
                 : null;
               const methodParameters = methodHeader
-                ? this.formalParameterList(
-                  methodHeader.children.methodDeclarator?.[0].children
-                    .formalParameterList?.[0],
-                )
+                ? this.formalParameterList(methodHeader.children.methodDeclarator?.[0].children.formalParameterList?.[0])
                 : [];
               let methodExceptions: string[] = [];
               if (methodHeader?.children?.throws) {
-                methodExceptions = this.parseThrows(
-                  methodHeader.children.throws?.[0],
-                );
+                methodExceptions = this.parseThrows(methodHeader.children.throws?.[0]);
               }
+
               if (methodName && methodReturnType) {
                 this.currentClass?.methods?.push({
                   name: methodName,
@@ -138,12 +169,89 @@ export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
     }
   }
 
+  override interfaceMemberDeclaration(ctx: any) {
+    if (!this.currentInterface) {
+      console.error("No active interface to add members to.");
+      return;
+    }
+
+    // Handle interface methods
+    if (ctx.interfaceMethodDeclaration) {
+      ctx.interfaceMethodDeclaration.forEach(
+        (methodDeclaration: any) => {
+          const methodModifiers = methodDeclaration.children.interfaceMethodModifier
+            ? this.fieldModifier(methodDeclaration.children.interfaceMethodModifier)
+            : [];
+          const methodHeader = methodDeclaration.children.methodHeader?.[0];
+          const methodReturnType = methodHeader ? this.unannType(methodHeader.children.result)
+            : null;
+          const methodName = methodHeader
+            ? this.extractFieldName(methodHeader.children.methodDeclarator?.[0])
+            : null;
+          const methodParameters = methodHeader
+            ? this.formalParameterList(methodHeader.children.methodDeclarator?.[0].children.formalParameterList?.[0])
+            : [];
+          let methodExceptions: string[] = [];
+          if (methodHeader?.children?.throws) {
+            methodExceptions = this.parseThrows(methodHeader.children.throws?.[0]);
+          }
+
+          if (methodName && methodReturnType) {
+            this.currentInterface?.methods?.push({
+              name: methodName,
+              returnType: methodReturnType,
+              modifiers: methodModifiers,
+              parameters: methodParameters,
+              exceptions: methodExceptions,
+            });
+          }
+        },
+      );
+    }
+
+    // Handle interface constants
+    if (ctx.constantDeclaration) {
+      ctx.constantDeclaration.forEach(
+        (constantDeclaration: any) => {
+          const constantModifiers = constantDeclaration.children.constantModifier
+            ? this.fieldModifier(constantDeclaration.children.constantModifier)
+            : [];
+          const constantType = constantDeclaration.children.unannType
+            ? this.unannType(constantDeclaration.children.unannType)
+            : null;
+          const constantNames =
+            constantDeclaration.children.variableDeclaratorList
+              ? this.variableDeclaratorList(
+                constantDeclaration.children.variableDeclaratorList,
+                true,
+              )
+              : [];
+
+          constantNames.forEach((constantName) => {
+            if (constantType) {
+              this.currentInterface?.constants?.push({
+                name: constantName,
+                type: constantType,
+                modifiers: constantModifiers,
+              });
+            }
+          });
+        },
+      );
+    }
+
+    super.interfaceMemberDeclaration(ctx);
+  }
+
   override ordinaryCompilationUnit(ctx: any) {
     super.ordinaryCompilationUnit(ctx);
-
     if (this.currentClass) {
       this.structure.classes.push(this.currentClass);
       this.currentClass = null;
+    }
+    if (this.currentInterface) {
+      this.structure.interfaces.push(this.currentInterface);
+      this.currentInterface = null;
     }
   }
 
@@ -166,12 +274,21 @@ export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
 
   override unannType(ctx: any): string | null {
     let fieldType: string | null = null;
-    ctx.forEach((child: any) => {
-      const extractedType = this.extractType(child);
+
+    if (Array.isArray(ctx)) {
+      ctx.forEach((child: any) => {
+        const extractedType = this.extractType(child);
+        if (extractedType) {
+          fieldType = extractedType;
+        }
+      });
+    } else if (ctx) {
+      const extractedType = this.extractType(ctx);
       if (extractedType) {
         fieldType = extractedType;
       }
-    });
+    }
+
     return fieldType;
   }
 
@@ -197,15 +314,18 @@ export class JavaStructureVisitor extends BaseJavaCstVisitorWithDefaults {
   }
 
   override variableDeclaratorList(ctx: any, field: boolean): string[] {
-    let variableDeclaratorId: any;
     const fieldNames: string[] = [];
-    ctx.forEach((variableDeclarator: any) => {
+
+    if (!ctx) return fieldNames;
+
+    const variableDeclarators = Array.isArray(ctx) ? ctx : [ctx];
+
+    variableDeclarators.forEach((variableDeclarator: any) => {
+      let variableDeclaratorId: any;
       if (field) {
-        variableDeclaratorId = variableDeclarator.children?.variableDeclarator
-          ?.[0]?.children?.variableDeclaratorId?.[0];
+        variableDeclaratorId = variableDeclarator.children?.variableDeclarator?.[0]?.children?.variableDeclaratorId?.[0];
       } else {
-        variableDeclaratorId = variableDeclarator.children?.methodDeclarator
-          ?.[0];
+        variableDeclaratorId = variableDeclarator.children?.methodDeclarator?.[0];
       }
       const fieldName = this.extractFieldName(variableDeclaratorId);
       if (fieldName) {

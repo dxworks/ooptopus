@@ -3,6 +3,7 @@ import {
   ClassEvaluation,
   GradingSchema,
   TestResults,
+  InterfaceEvaluation,
 } from "./evaluating.model.ts";
 import {
   ClassMetrics,
@@ -12,6 +13,7 @@ import {
 
 export function evaluateAll(
   classEvaluations: ClassEvaluation[],
+  interfaceEvaluations: InterfaceEvaluation[],
   didCompile: boolean,
   gradingSchema: GradingSchema,
   generateIndividualCSV: boolean,
@@ -34,7 +36,178 @@ export function evaluateAll(
     ),
   );
 
-  // 2) Evaluate each class based on the grading schema
+  // 2) Evaluate interfaces
+  if (gradingSchema.interfaces) {
+    console.log(yellow(`\n--- Evaluating Interfaces ---`));
+    for (const interfaceName in gradingSchema.interfaces) {
+      const interfaceSchema = gradingSchema.interfaces[interfaceName];
+      const interfaceEval = interfaceEvaluations.find((int) => int.id === interfaceName);
+
+      // Interface Name
+      totalPoints += interfaceSchema.name;
+      const namePoints = interfaceEval?.nameCorrect ? interfaceSchema.name : 0;
+      earnedPoints += namePoints;
+      console.log(yellow(
+        `Interface "${interfaceName}" name correctness: ${
+          interfaceEval?.nameCorrect ? "✅" : "❌"
+        } -- ${namePoints}/${interfaceSchema.name} points`,
+      ));
+
+      // Interface Extends
+      if (interfaceSchema.extends) {
+        totalPoints += interfaceSchema.extends;
+        const extendsPoints = interfaceEval?.extendsCorrect ? interfaceSchema.extends : 0;
+        earnedPoints += extendsPoints;
+        console.log(yellow(
+          `Interface "${interfaceName}" extends correctness: ${
+            interfaceEval?.extendsCorrect ? "✅" : "❌"
+          } -- ${extendsPoints}/${interfaceSchema.extends} points`,
+        ));
+      }
+
+      // Interface Methods
+      if (interfaceSchema.methods) {
+        console.log(yellow(`\nMethods for interface "${interfaceName}":`));
+        for (const methodName in interfaceSchema.methods) {
+          const methodSchema = interfaceSchema.methods[methodName];
+          const methodEval = interfaceEval?.methodsCorrect.find((method) =>
+            method.id === methodName
+          );
+
+          const methodBaseTotal = methodSchema.name +
+            methodSchema.params +
+            methodSchema.returnType +
+            methodSchema.modifiers +
+            methodSchema.exceptions;
+
+          let methodPoints = 0;
+
+          // Name Check
+          const nameScore = methodEval?.correctName ? methodSchema.name : 0;
+          methodPoints += nameScore;
+          if (methodSchema.name !== 0) {
+            console.log(
+              yellow(
+                `  - Method Name "${methodName}": ${nameScore}/${methodSchema.name} points`,
+              ),
+            );
+          }
+
+          // Parameters Check
+          const paramsScore = methodEval?.correctParams ? methodSchema.params : 0;
+          methodPoints += paramsScore;
+          if (methodSchema.params !== 0) {
+            console.log(
+              yellow(
+                `  - Method Params "${methodName}": ${paramsScore}/${methodSchema.params} points`,
+              ),
+            );
+          }
+
+          // Return Type Check
+          const returnTypeScore = methodEval?.correctReturnType
+            ? methodSchema.returnType
+            : 0;
+          methodPoints += returnTypeScore;
+          if (methodSchema.returnType !== 0) {
+            console.log(
+              yellow(
+                `  - Return Type "${methodName}": ${returnTypeScore}/${methodSchema.returnType} points`,
+              ),
+            );
+          }
+
+          // Modifiers Check
+          const modifiersScore = methodEval?.correctModifiers
+            ? methodSchema.modifiers
+            : 0;
+          methodPoints += modifiersScore;
+          if (methodSchema.modifiers !== 0) {
+            console.log(
+              yellow(
+                `  - Modifiers "${methodName}": ${modifiersScore}/${methodSchema.modifiers} points`,
+              ),
+            );
+          }
+
+          // Exceptions Check
+          const exceptionsScore = methodEval?.correctExceptions
+            ? methodSchema.exceptions
+            : 0;
+          methodPoints += exceptionsScore;
+          if (methodSchema.exceptions !== 0) {
+            console.log(
+              yellow(
+                `  - Exceptions "${methodName}": ${exceptionsScore}/${methodSchema.exceptions} points`,
+              ),
+            );
+          }
+
+          totalPoints += methodBaseTotal;
+          earnedPoints += methodPoints;
+
+          console.log(
+            yellow(
+              `- Method "${methodName}" => ${methodPoints}/${methodBaseTotal} points`,
+            ),
+          );
+        }
+      }
+
+      // Interface Constants
+      if (interfaceSchema.constants) {
+        console.log(yellow(`\nConstants for interface "${interfaceName}":`));
+        for (const constantName in interfaceSchema.constants) {
+          const constantSchema = interfaceSchema.constants[constantName];
+          const constantEval = interfaceEval?.constantsCorrect.find((constant) =>
+            constant.id === constantName
+          );
+
+          const constantTotal = constantSchema.name + constantSchema.type + constantSchema.modifiers;
+          totalPoints += constantTotal;
+
+          let constantScore = 0;
+          // Name Check
+          const nameScore = constantEval?.correctName ? constantSchema.name : 0;
+          constantScore += nameScore;
+          console.log(
+            yellow(
+              `  - Constant Name "${constantName}": ${nameScore}/${constantSchema.name} points`,
+            ),
+          );
+
+          // Type Check
+          const typeScore = constantEval?.correctType ? constantSchema.type : 0;
+          constantScore += typeScore;
+          console.log(
+            yellow(
+              `  - Constant Type "${constantName}": ${typeScore}/${constantSchema.type} points`,
+            ),
+          );
+
+          // Modifiers Check
+          const modifiersScore = constantEval?.correctModifiers
+            ? constantSchema.modifiers
+            : 0;
+          constantScore += modifiersScore;
+          console.log(
+            yellow(
+              `  - Constant Modifiers "${constantName}": ${modifiersScore}/${constantSchema.modifiers} points`,
+            ),
+          );
+
+          earnedPoints += constantScore;
+          console.log(
+            yellow(
+              `- Constant "${constantName}" => ${constantScore}/${constantTotal} points`,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  // 3) Evaluate each class based on the grading schema
   for (const className in gradingSchema.classes) {
     const currentClassMetrics: ClassMetrics = {
       className,
@@ -49,7 +222,7 @@ export function evaluateAll(
     // Class Name
     if (
       gradingClass.name !== 0 || gradingClass.extends !== 0 ||
-      gradingClass.implements !== 0
+      gradingClass.implements !== 0 || gradingClass.modifiers !== 0
     ) {
       totalPoints += gradingClass.name;
       const namePoints = clsEval?.nameCorrect ? gradingClass.name : 0;
@@ -80,6 +253,18 @@ export function evaluateAll(
         `Implements correctness: ${
           clsEval?.implementsCorrect ? "✅" : "❌"
         } -- ${implementsPoints}/${gradingClass.implements} points`,
+      ));
+
+      // Class Modifiers
+      totalPoints += gradingClass.modifiers;
+      const modifiersPoints = clsEval?.modifiersCorrect
+        ? gradingClass.modifiers
+        : 0;
+      earnedPoints += modifiersPoints;
+      console.log(yellow(
+        `Modifiers correctness: ${
+          clsEval?.modifiersCorrect ? "✅" : "❌"
+        } -- ${modifiersPoints}/${gradingClass.modifiers} points`,
       ));
     }
 
@@ -308,12 +493,9 @@ export function evaluateAll(
   }
 
   // 6) Final Score Calculation
+
   const finalScore = didCompile ? (earnedPoints / totalPoints) * 100 : 10;
-  console.log(
-    yellow(
-      `\nCalculating total: ${earnedPoints} earned/${totalPoints} total * 100 points`,
-    ),
-  );
+  console.log(yellow(`\nCalculating total: ${earnedPoints} earned/${totalPoints} total * 100 points`));
   const roundedScore = Math.round(finalScore);
 
   if (generateIndividualCSV) {
