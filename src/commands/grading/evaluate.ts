@@ -10,6 +10,7 @@ import {
   generateMetricsCSV,
   SolutionMetrics,
 } from "./generateMetrics.ts";
+import { generateEvaluationReport } from "./generateReport.ts";
 
 export function evaluateAll(
   classEvaluations: ClassEvaluation[],
@@ -17,7 +18,9 @@ export function evaluateAll(
   didCompile: boolean,
   gradingSchema: GradingSchema,
   generateIndividualCSV: boolean,
+  sourcePath: string,
   testResults?: TestResults[],
+  studentSolution?: string,
 ): SolutionMetrics | number {
   const metricsCollection: ClassMetrics[] = [];
 
@@ -497,6 +500,21 @@ export function evaluateAll(
   const finalScore = didCompile ? (earnedPoints / totalPoints) * 100 : 10;
   console.log(yellow(`\nCalculating total: ${earnedPoints} earned/${totalPoints} total * 100 points`));
   const roundedScore = Math.round(finalScore);
+
+  // Generate evaluation report
+  if (studentSolution) {
+    generateEvaluationReport({
+      studentSolution: `${sourcePath}\n${studentSolution}`,
+      classEvaluations,
+      interfaceEvaluations,
+      testResults,
+      didCompile,
+      totalScore: roundedScore,
+      totalPoints,
+      earnedPoints,
+      gradingSchema,
+    });
+  }
 
   if (generateIndividualCSV) {
     generateMetricsCSV(metricsCollection);

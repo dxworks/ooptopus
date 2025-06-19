@@ -22,7 +22,7 @@ async function createAssistantWithCSV(expectedStructurePath: string, isBatchMode
   const newAssistant = await openai.beta.assistants.create({
     name: "Code Structure Mapper update batch mode",
     instructions: templateAssistant.instructions + "\n\nExpected structure CSV:\n" + csvContent,
-    model: "gpt-4-turbo-preview",
+    model: "gpt-4o",
   });
 
   if (isBatchMode) {

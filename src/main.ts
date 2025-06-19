@@ -132,27 +132,32 @@ async function processSolution(
   generateIndividualCSV: boolean,
   expectedStructure: JavaStructure,
 ): Promise<SolutionMetrics | number> {
-  let compiledOK = false;
   try {
     await compileJava(sourcePath, "./out");
-    compiledOK = true;
   } catch (err) {
-    compiledOK = false;
     const errorMessage = String(err);
     console.error(red(`Compilation failed: ${errorMessage}`));
+    if (generateIndividualCSV) {
+      console.log(blue(`\n🎉🎉🎉 Final Score: 10/100 🎉🎉🎉`));
+      console.log(red("Note: Score reflects compilation failure"));
+      return 10;
+    }
+    // In batch mode, just return the metrics object without any additional processing
+    return {
+      totalScore: 10,
+      classes: []
+    };
   }
 
-  let classEvaluations: ClassEvaluation[];
-  let interfaceEvaluations: InterfaceEvaluation[];
-
-  if (compiledOK) {
-    const { classEvaluations: classEvals, interfaceEvaluations: interfaceEvals } = verifyStructure(sourcePath, expectedStructure);
-    classEvaluations = classEvals;
-    interfaceEvaluations = interfaceEvals;
-  } else {
-    classEvaluations = returnEmptyClassEvaluations(expectedStructure);
-    interfaceEvaluations = returnEmptyInterfaceEvaluations(expectedStructure);
+  // Only proceed with the rest of the processing if compilation succeeded
+  let studentSolution = "";
+  try {
+    studentSolution = await Deno.readTextFile(sourcePath);
+  } catch (err) {
+    console.error(red(`Failed to read student solution: ${err}`));
   }
+
+  const { classEvaluations: classEvals, interfaceEvaluations: interfaceEvals } = verifyStructure(sourcePath, expectedStructure);
 
   if (!args["expected-structure"]) {
     console.error(red("Expected structure path not provided."));
@@ -162,7 +167,7 @@ async function processSolution(
   await runAssistant(sourcePath, expectedStructureCsvPath, args.batch);
 
   let testResults = undefined;
-  if (testPath && compiledOK) {
+  if (testPath) {
     console.log(blue(`\nRunning tests...`));
     try {
       await compileJava(
@@ -177,85 +182,17 @@ async function processSolution(
   }
 
   const metrics = evaluateAll(
-    classEvaluations,
-    interfaceEvaluations,
-    compiledOK,
+    classEvals,
+    interfaceEvals,
+    true,
     gradingSchema,
     generateIndividualCSV,
+    sourcePath,
     testResults,
+    studentSolution,
   );
   if (generateIndividualCSV) {
     console.log(blue(`\n🎉🎉🎉 Final Score: ${metrics}/100 🎉🎉🎉`));
-    if (!compiledOK) {
-      console.log(
-        red("Note: Score includes penalty for compilation failure (1/10)"),
-      );
-    }
   }
   return metrics;
-}
-
-function returnEmptyInterfaceEvaluations(
-  expectedStructure: JavaStructure,
-): InterfaceEvaluation[] {
-  return expectedStructure.interfaces.map((expectedInterface) => ({
-    id: expectedInterface.name,
-    name: expectedInterface.name,
-    nameCorrect: false,
-    extendsCorrect: false,
-    methodsCorrect: expectedInterface.methods?.map((method) => ({
-      id: method.name + "(" + method.parameters.map((param) =>
-        param.type
-      ).join(", ") + ")",
-      methodName: method.name,
-      correctName: false,
-      correctParams: false,
-      correctReturnType: false,
-      correctModifiers: false,
-      correctExceptions: false,
-    })) || [],
-    constantsCorrect: expectedInterface.constants?.map((constant) => ({
-      id: constant.name,
-      correctName: false,
-      correctType: false,
-      correctModifiers: false,
-    })) || [],
-  }));
-}
-
-function returnEmptyClassEvaluations(
-  expectedStructure: JavaStructure,
-): ClassEvaluation[] {
-  return expectedStructure.classes.map((expectedClass) => ({
-    name: expectedClass.name,
-    id: expectedClass.name,
-    nameCorrect: false,
-    extendsCorrect: false,
-    implementsCorrect: false,
-    modifiersCorrect: false,
-    fieldsCorrect: expectedClass.fields?.map((field) => ({
-      id: field.name,
-      correctName: false,
-      correctType: false,
-      correctModifiers: false,
-    })) || [],
-    methodsCorrect: expectedClass.methods?.map((method) => ({
-      id: method.name + "(" + method.parameters.map((param) =>
-        param.type
-      ).join(", ") + ")",
-      methodName: method.name,
-      correctName: false,
-      correctParams: false,
-      correctReturnType: false,
-      correctModifiers: false,
-      correctExceptions: false,
-    })) || [],
-    constructorsCorrect: expectedClass.constructors?.map((ctor) => ({
-      id: ctor.name + "(" + ctor.parameters.map((param) =>
-        param.type
-      ).join(", ") + ")",
-      correctName: false,
-      correctParams: false,
-    })) || [],
-  }));
 }
