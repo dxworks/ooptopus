@@ -289,7 +289,7 @@ function generateInterfacesSection(interfaces: InterfaceEvaluation[]): string {
     <div class="section">
         <h2 class="section-title">Interface Evaluations</h2>
         ${interfaces.map(iface => `
-            <button class="collapsible">Interface: ${iface.name}</button>
+            <button class="collapsible">Interface: ${iface.id}</button>
             <div class="content">
                 <ul class="attribute-list">
                     <li>Name: ${iface.nameCorrect ? '✅' : '❌'}</li>
@@ -321,7 +321,7 @@ function generateClassesSection(classes: ClassEvaluation[]): string {
     <div class="section">
         <h2 class="section-title">Class Evaluations</h2>
         ${classes.map(cls => `
-            <button class="collapsible">Class: ${cls.name}</button>
+            <button class="collapsible">Class: ${cls.id}</button>
             <div class="content">
                 <ul class="attribute-list">
                     <li>Name: ${cls.nameCorrect ? '✅' : '❌'}</li>

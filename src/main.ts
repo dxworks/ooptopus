@@ -4,7 +4,6 @@ import { compileJava } from "./commands/steps/compile/compile.ts";
 import { verifyStructure } from "./commands/steps/structure/structure.ts";
 import { extractJavaStructure } from "./commands/steps/structure/extract-structure-command.ts";
 import { runJUnitTests } from "./commands/steps/tests/test.ts";
-import {ClassEvaluation, InterfaceEvaluation} from "./commands/grading/evaluating.model.ts";
 import { evaluateAll } from "./commands/grading/evaluate.ts";
 import { JavaStructure } from "./commands/steps/structure/structure-types.ts";
 import {
@@ -20,8 +19,6 @@ const args = parseArgs(Deno.args, {
   alias: { source: "s", test: "t", grading: "g", batch: "b", "expected-structure": "e" },
   stopEarly: true,
 });
-
-console.log(blue(bgWhite(JSON.stringify(args))));
 
 async function loadExpectedStructure(
   filePath: string,
@@ -105,7 +102,6 @@ if (args._) {
   }
 
   if (args._.includes("extract-structure")) {
-    console.log(blue("Extracting structure..."));
     if (!args.source) {
       console.error(red("Source file not provided."));
       Deno.exit(1);

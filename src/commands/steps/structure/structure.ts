@@ -49,7 +49,6 @@ export function verifyStructure(sourcePath: string, expectedStructure: JavaStruc
         console.log(blue(`\nChecking interface "${expectedInterface.name}"...`));
         const interfaceEvaluation: InterfaceEvaluation = {
             id: expectedInterface.name,
-            name: expectedInterface.name,
             nameCorrect: false,
             extendsCorrect: false,
             methodsCorrect: [],
@@ -191,7 +190,6 @@ export function verifyStructure(sourcePath: string, expectedStructure: JavaStruc
         console.log(blue(`\nChecking class "${expectedClass.name}"...`));
         const extractedClass = extractedClasses.find(cls => cls.name === expectedClass.name);
         const classEvaluation: ClassEvaluation = {
-            name: expectedClass.name,
             id: expectedClass.name,
             nameCorrect: false,
             extendsCorrect: false,

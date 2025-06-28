@@ -218,7 +218,7 @@ export function evaluateAll(
     };
 
     const gradingClass = gradingSchema.classes[className];
-    const clsEval = classEvaluations.find((cls) => cls.name === className);
+    const clsEval = classEvaluations.find((cls) => cls.id === className);
 
     console.log(yellow(`\n--- Evaluating class "${className}" ---`));
 

@@ -23,7 +23,6 @@ export interface ConstructorEvaluation {
 
 export interface InterfaceEvaluation {
   id: string;
-  name: string;
   nameCorrect: boolean;
   extendsCorrect: boolean;
   methodsCorrect: MethodEvaluation[];
@@ -32,7 +31,6 @@ export interface InterfaceEvaluation {
 
 export interface ClassEvaluation {
   id: string;
-  name: string;
   nameCorrect: boolean;
   extendsCorrect: boolean;
   implementsCorrect: boolean;
