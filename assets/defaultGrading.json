@@ -1,0 +1,74 @@
+{
+    "compilation": 20,
+    "classes": {
+        "SimpleClass": {
+            "name": 1,
+            "extends": 2,
+            "implements": 3,
+            "fields": {
+                "name": {
+                    "name": 1,
+                    "type": 2,
+                    "modifiers": 3
+                },
+                "value": {
+                    "name": 1,
+                    "type": 2,
+                    "modifiers": 3
+                }
+            },
+            "methods": {
+                "getValue()": {
+                    "name": 1,
+                    "params": 2,
+                    "returnType": 3,
+                    "modifiers": 4,
+                    "exceptions": 5,
+                    "tests": {
+                        "testGetValue_Positive": 10,
+                        "testGetValue_Negative": 20
+                    }
+                },
+                "getName()": {
+                    "name": 1,
+                    "params": 2,
+                    "returnType": 3,
+                    "modifiers": 4,
+                    "exceptions": 5,
+                    "tests": {
+                        "testGetName_WithCustomName": 10,
+                        "testGetName_DefaultConstructor": 20
+                    }
+                },
+                "incrementValue()": {
+                    "name": 1,
+                    "params": 2,
+                    "returnType": 3,
+                    "modifiers": 4,
+                    "exceptions": 5,
+                    "tests": {
+                        "testIncrementValue_Once": 10,
+                        "testIncrementValue_MultipleTimes": 20
+                    }
+                },
+                "reset()": {
+                    "name": 1,
+                    "params": 2,
+                    "returnType": 3,
+                    "modifiers": 4,
+                    "exceptions": 5
+                }
+            },
+            "constructors": {
+                "SimpleClass()": {
+                    "name": 1,
+                    "params": 2
+                },
+                "SimpleClass(String name, int value)": {
+                    "name": 1,
+                    "params": 5
+                }
+            }
+        }
+    }
+}

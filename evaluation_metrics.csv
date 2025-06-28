@@ -1,0 +1,16 @@
+Class,Method,Earned Points,Total Points,Difference
+
+Car Class
+equals(Object),10,10,0
+toString(),10,10,0
+Car(String+ int),5,5,0
+Car(String+ int+ double),5,5,0
+
+CarSet Class
+addCar(Car),15,15,0
+removeCar(int),10,10,0
+toString(),10,10,0
+intersection(CarSet),15,15,0
+getTotalCarsAdded(),2.5,2.5,0
+getTotalCarsDeleted(),2.5,2.5,0
+CarSet(int),5,5,0

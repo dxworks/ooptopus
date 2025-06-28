@@ -1,34 +1,30 @@
-
-export interface ExpectedStructure {
-    classes: Class[];
-}
-
-interface Class {
-    name: string;
-    fields?: Field[];
-    constructors?: Constructor[];
-    methods?: Method[];
-}
-
-interface Field {
-    name: string;
-    type: string;
-    modifiers: string[];
-}
-
-interface Method {
-    name: string;
-    returnType: string;
-    modifiers: string[];
-    parameters: Parameter[];
-}
-
-interface Constructor {
-    parameters: Parameter[];
-    modifiers: string[];
-}
-
-interface Parameter {
-    name: string;
-    type: string;
+export interface JavaStructure {
+    classes: {
+        name: string;
+        modifiers: string[];
+        extends?: string;
+        implements?: string[];
+        fields?: { name: string;
+            type: string;
+            modifiers: string[] }[];
+        methods?: { name: string;
+            returnType: string;
+            modifiers: string[];
+            parameters: { name: string; type: string; }[];
+            exceptions: string[]; }[];
+        constructors?: { name: string;
+            parameters: { name: string; type: string; }[]; }[];
+    }[],
+    interfaces: {
+        name: string;
+        extends?: string[];
+        methods?: { name: string;
+            returnType: string;
+            modifiers: string[];
+            parameters: { name: string; type: string; }[];
+            exceptions: string[]; }[];
+        constants?: { name: string;
+            type: string;
+            modifiers: string[]; }[];
+    }[];
 }
